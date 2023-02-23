@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import time
 import rospy            # ROS Python interface
@@ -16,65 +16,75 @@ class JointPublisher(object):
         rospy.init_node("joint_publisher")
         self.position = None
         self.start = time.time()
-        topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
+        self.topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
         self.kinematic_pub = rospy.Publisher(
-            topic_base_name + "/control/kinematic_joints", JointState, queue_size=0
+            self.topic_base_name + "/control/kinematic_joints", JointState, queue_size=0
         )
         self.cosmetic_pub = rospy.Publisher(
-            topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
+            self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
+        self.time_scale = 0.3
+        self.kinematic_joint_cmd = JointState()
+        self.kinematic_joint_cmd.position = [0, 0, 0, 0]
+        self.cosmetic_joint_cmd = Float32MultiArray()   
+        self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]   
 
     # movement for either tilt, lift, yaw or pitch
     def set_move_kinematic(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
-        joint_cmd = JointState()
-        joint_cmd.position = [tilt, lift, yaw, pitch]
-        self.kinematic_pub.publish(joint_cmd)
+        self.kinematic_joint_cmd.position = [tilt, lift, yaw, pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
     # movement for the tail, eye lid, ears
     def set_move_cosmetic(self, tail_pitch = 0, tail_yaw = 0, left_eye = 0, right_eye = 0, left_ear = 0, right_ear = 0):
-        joint_cmd = Float32MultiArray()
-        joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
-        self.cosmetic_pub.publish(joint_cmd)
+        self.cosmetic_joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
     # a sample on how the miro can blink
     def blink_sample(self):
         current_time = time.time()
-        set_angle = np.sin(current_time - self.start)
-        self.set_move_cosmetic(left_eye = set_angle, right_eye = set_angle)
+        set_angle = np.sin(self.time_scale*(current_time - self.start))
+        tail_pitch = self.cosmetic_joint_cmd.data[0]
+        tail_yaw = self.cosmetic_joint_cmd.data[1]
+        left_eye = set_angle
+        right_eye = set_angle
+        left_ear = self.cosmetic_joint_cmd.data[4]
+        right_ear = self.cosmetic_joint_cmd.data[5]
+        self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         rospy.sleep(0.05)
    
     # ear movemnt sample
     def ear_sample(self):
         current_time = time.time()
-        set_angle = np.sin(current_time - self.start)
+        set_angle = np.sin(self.time_scale*(current_time - self.start))
         self.set_move_cosmetic(left_ear = set_angle, right_ear= set_angle)
         rospy.sleep(0.1)
    
     #tail
     def tail_sample(self):
         current_time = time.time()
-        set_angle = np.sin(current_time - self.start)
+        set_angle = np.sin(self.time_scale*(current_time - self.start))
         self.set_move_cosmetic(tail_pitch = set_angle, tail_yaw = set_angle)
         rospy.sleep(0.05)
     
     #head movements/ up and down
     def head_sample(self):
         current_time = time.time()
-        set_angle = np.sin(current_time - self.start)
+        set_angle = np.sin(self.time_scale*(current_time - self.start))
         self.set_move_kinematic(tilt = set_angle, lift=set_angle)
         rospy.sleep(0.05)
 
     #head movements / left and right 
     def rotate_sample(self):
         current_time = time.time()
-        set_angle = np.sin(current_time - self.start)
+        set_angle = np.sin(self.time_scale*(current_time - self.start))
         self.set_move_kinematic(yaw = set_angle, pitch= set_angle)
         rospy.sleep(0.05)
 
 movement = JointPublisher()
 while not rospy.is_shutdown():
     movement.blink_sample()
-    #movement.ear_sample()
-    #movement.tail_sample()
-    #movement.head_sample()
-    movement.rotate_sample()
+    # movement.ear_sample()
+    # movement.tail_sample()
+    # movement.head_sample()
+    # movement.rotate_sample()
+    print(np.sin(movement.time_scale*(time.time() - movement.start)))
