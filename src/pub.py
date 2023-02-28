@@ -56,35 +56,55 @@ class JointPublisher(object):
     def ear_sample(self):
         current_time = time.time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
-        self.set_move_cosmetic(left_ear = set_angle, right_ear= set_angle)
-        rospy.sleep(0.1)
+        tail_pitch = self.cosmetic_joint_cmd.data[0]
+        tail_yaw = self.cosmetic_joint_cmd.data[1]
+        left_eye = self.cosmetic_joint_cmd.data[2]
+        right_eye = self.cosmetic_joint_cmd.data[3]
+        left_ear = set_angle
+        right_ear = set_angle
+        self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
+        rospy.sleep(0.05)
    
     #tail
     def tail_sample(self):
         current_time = time.time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
-        self.set_move_cosmetic(tail_pitch = set_angle, tail_yaw = set_angle)
+        left_eye = self.cosmetic_joint_cmd.data[0]
+        right_eye = self.cosmetic_joint_cmd.data[1]
+        tail_pitch = set_angle
+        tail_yaw = set_angle
+        left_ear = self.cosmetic_joint_cmd.data[2]
+        right_ear = self.cosmetic_joint_cmd.data[3]
+        self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         rospy.sleep(0.05)
     
     #head movements/ up and down
     def head_sample(self):
         current_time = time.time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
-        self.set_move_kinematic(tilt = set_angle, lift=set_angle)
+        tilt = set_angle
+        lift = set_angle
+        yaw = self.kinematic_joint_cmd.position[0]
+        pitch = self.kinematic_joint_cmd.position[1]
+        self.set_move_kinematic( tilt, lift, yaw, pitch)
         rospy.sleep(0.05)
 
     #head movements / left and right 
     def rotate_sample(self):
         current_time = time.time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
-        self.set_move_kinematic(yaw = set_angle, pitch= set_angle)
+        tilt = self.kinematic_joint_cmd.position[0]
+        lift = self.kinematic_joint_cmd.position[1]
+        yaw = set_angle
+        pitch = set_angle
+        self.set_move_kinematic( tilt, lift, yaw, pitch)
         rospy.sleep(0.05)
 
 movement = JointPublisher()
 while not rospy.is_shutdown():
     movement.blink_sample()
-    # movement.ear_sample()
-    # movement.tail_sample()
-    # movement.head_sample()
-    # movement.rotate_sample()
+    movement.ear_sample()
+    movement.tail_sample()
+    movement.head_sample()
+    movement.rotate_sample()
     print(np.sin(movement.time_scale*(time.time() - movement.start)))
