@@ -5,6 +5,7 @@ import rospy            # ROS Python interface
 import numpy as np
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import UInt32MultiArray
 
 class JointPublisher(object):
     
@@ -50,7 +51,7 @@ class JointPublisher(object):
         left_ear = self.cosmetic_joint_cmd.data[4]
         right_ear = self.cosmetic_joint_cmd.data[5]
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        rospy.sleep(0.05)
+        rospy.sleep(0.03)
    
     # ear movemnt sample
     def ear_sample(self):
@@ -103,8 +104,9 @@ class JointPublisher(object):
 movement = JointPublisher()
 while not rospy.is_shutdown():
     movement.blink_sample()
-    movement.ear_sample()
-    movement.tail_sample()
-    movement.head_sample()
-    movement.rotate_sample()
-    print(np.sin(movement.time_scale*(time.time() - movement.start)))
+    #movement.ear_sample()
+    #movement.tail_sample()
+    #movement.head_sample()
+    #movement.rotate_sample()
+    #print(np.sin(movement.time_scale*(time.time() - movement.start))) 
+

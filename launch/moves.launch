@@ -1,0 +1,8 @@
+<launch> 
+    <node pkg = "dancing_miro" type = "pub.py" name = "joint_moves" output = "screen">
+    </node>
+    <node pkg = "dancing_miro" type = "illum_pub.py" name = "led_moves" output = "screen">
+    </node>
+    <node pkg = "dancing_miro" type = "point_to_sound.py" name = "hearing" output = "screen">
+    </node>
+</launch>
