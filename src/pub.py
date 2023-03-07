@@ -51,7 +51,7 @@ class JointPublisher(object):
         left_ear = self.cosmetic_joint_cmd.data[4]
         right_ear = self.cosmetic_joint_cmd.data[5]
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        rospy.sleep(0.03)
+        #rospy.sleep(0.03)
    
     # ear movemnt sample
     def ear_sample(self):
@@ -64,7 +64,7 @@ class JointPublisher(object):
         left_ear = set_angle
         right_ear = set_angle
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        rospy.sleep(0.05)
+        #rospy.sleep(0.05)
    
     #tail
     def tail_sample(self):
@@ -77,7 +77,7 @@ class JointPublisher(object):
         left_ear = self.cosmetic_joint_cmd.data[2]
         right_ear = self.cosmetic_joint_cmd.data[3]
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        rospy.sleep(0.05)
+        #rospy.sleep(0.05)
     
     #head movements/ up and down
     def head_sample(self):
@@ -88,7 +88,7 @@ class JointPublisher(object):
         yaw = self.kinematic_joint_cmd.position[0]
         pitch = self.kinematic_joint_cmd.position[1]
         self.set_move_kinematic( tilt, lift, yaw, pitch)
-        rospy.sleep(0.05)
+        #rospy.sleep(0.05)
 
     #head movements / left and right 
     def rotate_sample(self):
@@ -99,7 +99,7 @@ class JointPublisher(object):
         yaw = set_angle
         pitch = set_angle
         self.set_move_kinematic( tilt, lift, yaw, pitch)
-        rospy.sleep(0.05)
+        #rospy.sleep(0.05)
 
 movement = JointPublisher()
 while not rospy.is_shutdown():

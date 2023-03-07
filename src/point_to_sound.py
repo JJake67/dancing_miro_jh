@@ -152,6 +152,21 @@ class AudioClient():
         # data for angular calculation
         self.audio_event = AudioEng.process_data(data.data)
 
+        now = rospy.Time.now()
+        zero_time = rospy.Time()
+
+        print 'Fields are', now.secs, now.nsecs
+
+        # Time arithmetic
+        five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
+        five_seconds  = now - five_secs_ago  # Time minus Time is a Duration
+        true_val = now > five_secs_ago
+
+        # NOTE: in general, you will want to avoid using time.time() in ROS code
+        import time
+        py_time = rospy.Time.from_sec(time.time())
+        # 1.2 1.7 2.2  -> predict -> start in sync
+
         # data for dynamic thresholding
         data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
         data_t = data_t.reshape((4, 500))    
