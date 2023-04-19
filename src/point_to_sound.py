@@ -155,7 +155,7 @@ class AudioClient():
         now = rospy.Time.now()
         zero_time = rospy.Time()
 
-        print 'Fields are', now.secs, now.nsecs
+        print ('Fields are', now.secs, now.nsecs)
 
         # Time arithmetic
         five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time

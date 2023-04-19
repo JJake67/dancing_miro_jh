@@ -24,11 +24,11 @@ class JointPublisher(object):
         self.cosmetic_pub = rospy.Publisher(
             self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
-        self.time_scale = 0.3
+        self.time_scale = 30 #for how fast the movement is 
         self.kinematic_joint_cmd = JointState()
         self.kinematic_joint_cmd.position = [0, 0, 0, 0]
         self.cosmetic_joint_cmd = Float32MultiArray()   
-        self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]   
+        self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]
 
     # movement for either tilt, lift, yaw or pitch
     def set_move_kinematic(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
@@ -51,7 +51,7 @@ class JointPublisher(object):
         left_ear = self.cosmetic_joint_cmd.data[4]
         right_ear = self.cosmetic_joint_cmd.data[5]
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        #rospy.sleep(0.03)
+        #rospy.sleep(60)
    
     # ear movemnt sample
     def ear_sample(self):
@@ -64,7 +64,7 @@ class JointPublisher(object):
         left_ear = set_angle
         right_ear = set_angle
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
-        #rospy.sleep(0.05)
+        rospy.sleep(0.05)
    
     #tail
     def tail_sample(self):
@@ -88,7 +88,7 @@ class JointPublisher(object):
         yaw = self.kinematic_joint_cmd.position[0]
         pitch = self.kinematic_joint_cmd.position[1]
         self.set_move_kinematic( tilt, lift, yaw, pitch)
-        #rospy.sleep(0.05)
+        rospy.sleep(0.05)
 
     #head movements / left and right 
     def rotate_sample(self):
@@ -103,10 +103,11 @@ class JointPublisher(object):
 
 movement = JointPublisher()
 while not rospy.is_shutdown():
-    movement.blink_sample()
-    #movement.ear_sample()
+    #movement.blink_sample()
+    movement.ear_sample()
     #movement.tail_sample()
-    #movement.head_sample()
+    movement.head_sample()
     #movement.rotate_sample()
-    #print(np.sin(movement.time_scale*(time.time() - movement.start))) 
+    #rospy.sleep(0.5)
+    print(np.sin(movement.time_scale*(time.time() - movement.start))) 
 
