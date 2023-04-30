@@ -19,7 +19,7 @@ For Python 2 the shebang line is
 import math
 import os
 import numpy as np
-
+import time
 import rospy  # ROS Python interface
 from std_msgs.msg import (
     Float32MultiArray,
@@ -29,11 +29,13 @@ from std_msgs.msg import (
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
 
 import miro2 as miro  # MiRo Developer Kit library
+"""""
 try:  # For convenience, import this util separately
     from miro2.lib import wheel_speed2cmd_vel  # Python 3
 except ImportError:
     from miro2.utils import wheel_speed2cmd_vel  # Python 2
 ##########################
+"""
 
 
 class BodyMoves(object):
@@ -75,7 +77,63 @@ class BodyMoves(object):
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
+    """"
+    def rotate_m(self):
+        t0 = rospy.Time.now()
+        print("MiRo rotating") 
+        while rospy.Time.now() < t0 + self.ACTION_DURATION:
+            self.velocity.twist.linear.x = 0
+            self.velocity.twist.angular.z = 5/math.pi
+            self.pub_cmd_vel.publish(self.velocity)
+            #check if 5 seconds have passed
+            if time.time() - t0.to_sec() >= 5:
+                #reset the timer
+                t0 = rospy.Time.now()
+                #reverse the direction of rotation
+                self.velocity.twist.angular.z = -5/math.pi
+                self.pub_cmd_vel.publish(self.velocity)
+        #stop the rotation
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+    """
+    """"
+    def rotate_m(self):
+        t0 = rospy.Time.now()
+        print("MiRo rotating") 
+        while rospy.Time.now() < t0 + self.ACTION_DURATION:
+            self.velocity.twist.linear.x = 0
+            self.velocity.twist.angular.z = 5/math.pi
+            self.pub_cmd_vel.publish(self.velocity)
+            #check if 5 seconds have passed
+            if rospy.Time.now() > t0 + rospy.Duration(5):
+                #reset the timer
+                t0 = rospy.Time.now()
+                #reverse the direction of rotation
+                self.velocity.twist.angular.z *= -1
+                self.pub_cmd_vel.publish(self.velocity)
+        #stop the rotation
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+    """
+    def rotate_m2(self): 
+        t0 = rospy.Time.now()
+        print("MiRo rotating")
+        while rospy.Time.now() < t0 + self.ACTION_DURATION:
+            self.velocity.twist.linear.x = 0
+            self.velocity.twist.angular.z = 5/math.pi 
+            self.pub_cmd_vel.publish(self.velocity)
+            if (rospy.Time.now() - t0).to_sec() >= 5.0:
+                t0 = rospy.Time.now()
+                self.velocity.twist.angular.z *= -1.0
+                #self.pub_cmd_vel.publish(self.velocity)
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
 
 movement = BodyMoves()
-# while not rospy.is_shutdown():
-movement.rotate()
+while not rospy.is_shutdown():
+    #movement.rotate_m2()
+    #rospy.sleep(1)
+    movement.rotate()

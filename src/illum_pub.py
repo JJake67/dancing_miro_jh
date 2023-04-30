@@ -40,3 +40,4 @@ while not rospy.is_shutdown(): #light up 3 different colors
     illum.set_illumination(red = 0, green = 200, blue = 200)
     illum.set_illumination(red = 200, green = 0, blue = 200)
     illum.set_illumination(red = 200, green = 200, blue = 0)
+    illum.set_illumination(red = 200, green = 0, blue = 0)

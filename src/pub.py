@@ -26,6 +26,7 @@ class JointPublisher(object):
         )
         self.time_scale = 5 #for how fast the movement is 
         self.blink_freq = 2 #for how fast the movement is 
+        self.ear_freq = 3 #for how fast the movement is 
         self.kinematic_joint_cmd = JointState()
         self.kinematic_joint_cmd.position = [0, 0, 0, 0]
         self.cosmetic_joint_cmd = Float32MultiArray()   
@@ -61,13 +62,13 @@ class JointPublisher(object):
         right_eye = set_angle
         left_ear = self.cosmetic_joint_cmd.data[4]
         right_ear = self.cosmetic_joint_cmd.data[5]
-        self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
+        self.set_move_cosmetic2(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         #rospy.sleep(60)
    
     # ear movemnt sample
     def ear_sample(self):
         current_time = time.time()
-        set_angle = np.sin(self.time_scale*(current_time - self.start))
+        set_angle = np.sin(self.ear_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
         left_eye = self.cosmetic_joint_cmd.data[2]
@@ -123,17 +124,52 @@ class JointPublisher(object):
         self.kinematic_joint_cmd.position = [0, 0, yaw, 0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
-    def pitch_movement(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
-        pass
+    #def pitch_movement(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
+    def pitch_movement(self, t, t0):
+        self.kinematic_joint_cmd = JointState()
+        pitch_freq = 3
+        pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
+        print(pitch)
+        self.kinematic_joint_cmd.position = [0,0,0,pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+        #pass
+    
+    def blink_m(self,t,t0):
+        self.cosmetic_joint_cmd = Float32MultiArray()
+        blink_f=1
+        blink= self.sine_generator(0,0.5,0.5,blink_f,t,t0)
+        print(blink)
+        self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
+    
+    def ear_m(self,t,t0):
+        self.cosmetic_joint_cmd = Float32MultiArray()
+        ear_f=50
+        ear= self.sine_generator(0,0.33,0.5,ear_f,t,t0)
+        print(ear)
+        self.cosmetic_joint_cmd.data= [0,0,0,0,ear,ear]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    def tail(self,t,t0):
+        self.cosmetic_joint_cmd = Float32MultiArray()
+        tail_f= 90
+        tail= self.sine_generator(0,0.5,0.5,tail_f,t,t0)
+        print(tail)
+        self.cosmetic_joint_cmd.data= [0,tail,0,0,0,0]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
 movement = JointPublisher()
 t0 = rospy.Time.now().to_sec()
 while not rospy.is_shutdown():
     t = rospy.Time.now().to_sec()
-    movement.yaw_movement(t, t0)
+    movement.blink_m(t,t0)
+    #movement.ear_m(t,t0)
+    #movement.tail(t,t0)
+    #movement.yaw_movement(t, t0)
+    movement.pitch_movement(t, t0)
     rospy.sleep(0.05)
-    # movement.blink_sample()
+    #movement.blink_sample()
+    
     # movement.ear_sample()
     #movement.tail_sample()
     #movement.head_sample()
@@ -145,6 +181,8 @@ while not rospy.is_shutdown():
 
 
 """
+LaSolitude Estimated tempo bpm =  143.5546875 = 417.958638ms
+
 Sine generators for different joints:
 A*sin(w*t + phi)
 
@@ -156,4 +194,19 @@ yaw_joint_pose = 55 * sin (self.yaw_freq*(current_time - self.start) + phase)
 min = -22, max = 8,
 pitch_joint_pose = 15 * sin (self.yaw_freq*(current_time - self.start) + phase) - 7
 
+3. Ear 
+calib = 0.3333
+ear_counts_0 = 1750
+ear_count_1 = 1000
+
+4. Eye 
+calib = 0.5
+eye_counts_0 = 1000
+eye_counts_1 = 2000
+
+5. Wagging tail 
+calib = 0.5 default set 
+wag_counts_0 = 1300
+wag_counts_1= 1700 
+mdk/share/python/miro2/constants.py
 """
