@@ -1,7 +1,7 @@
 <launch> 
     <node pkg = "dancing_miro" type = "pub.py" name = "joint_moves" output = "screen" >
     </node>
-    <node pkg = "dancing_miro" type = "illum_pub.py" name = "led_moves" output = "screen" >
+    <node pkg = "dancing_miro" type = "illum_pub.py" name = "led_moves" output = "screen">
     </node>
     <node pkg = "dancing_miro" type = "body_moves.py" name = "body_moves" output = "screen" >
     </node>

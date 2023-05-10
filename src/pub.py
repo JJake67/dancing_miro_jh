@@ -181,7 +181,7 @@ while not rospy.is_shutdown():
 
 
 """
-LaSolitude Estimated tempo bpm =  143.5546875 = 417.958638ms
+LaSolitude Estimated tempo bpm =  143.5546875 = 417.958638ms = 2.38hzs frequency/angular velocity = 14.97 radian per seconds 
 
 Sine generators for different joints:
 A*sin(w*t + phi)
