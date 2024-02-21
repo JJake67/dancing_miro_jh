@@ -2,7 +2,7 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 
-y, sr = librosa.load('LaSolitude.wav')
+y, sr = librosa.load('LaSolitude.mp3')
 hop_length = 512 
 
 # Compute local onset autocorrelation
@@ -21,7 +21,7 @@ ax[0].plot(times, oenv, label='Onset strength')
 ax[0].label_outer()
 ax[0].legend(frameon=True)
 librosa.display.specshow(tempogram, sr=sr, hop_length=hop_length,
-                         x_axis='time', y_axis='tempo', cmap='magma',
+                         x_axis='time', y_axis='onstempo', cmap='magma',
                          ax=ax[1])
 
 ax[1].axhline(tempo, color='w', linestyle='--', alpha=1,

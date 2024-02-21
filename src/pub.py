@@ -24,9 +24,9 @@ class JointPublisher(object):
         self.cosmetic_pub = rospy.Publisher(
             self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
-        self.time_scale = 5 #for how fast the movement is 
-        self.blink_freq = 2 #for how fast the movement is 
-        self.ear_freq = 3 #for how fast the movement is 
+        self.time_scale = 0.5 #for how fast the movement is 
+        self.blink_freq = 0.5 #for how fast the movement is 
+        self.ear_freq = 1 #for how fast the movement is 
         self.kinematic_joint_cmd = JointState()
         self.kinematic_joint_cmd.position = [0, 0, 0, 0]
         self.cosmetic_joint_cmd = Float32MultiArray()   
@@ -54,7 +54,7 @@ class JointPublisher(object):
 
     # a sample on how the miro can blink
     def blink_sample(self):
-        current_time = time.time()
+        current_time = rtime.time()
         set_angle = np.sin(self.blink_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
@@ -65,9 +65,9 @@ class JointPublisher(object):
         self.set_move_cosmetic2(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         #rospy.sleep(60)
    
-    # ear movemnt sample
+    # ear movement sample
     def ear_sample(self):
-        current_time = time.time()
+        current_time = rospy.time.now()
         set_angle = np.sin(self.ear_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
@@ -80,7 +80,7 @@ class JointPublisher(object):
    
     #tail
     def tail_sample(self):
-        current_time = time.time()
+        current_time = rospy.time.now()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         left_eye = self.cosmetic_joint_cmd.data[0]
         right_eye = self.cosmetic_joint_cmd.data[1]
@@ -93,7 +93,7 @@ class JointPublisher(object):
     
     #head movements/ up and down
     def head_sample(self):
-        current_time = time.time()
+        current_time = rospy.time.now()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         tilt = set_angle
         lift = set_angle
@@ -104,7 +104,7 @@ class JointPublisher(object):
 
     #head movements / left and right 
     def rotate_sample(self):
-        current_time = time.time()
+        current_time = rospy.time.now()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         tilt = self.kinematic_joint_cmd.position[0]
         lift = self.kinematic_joint_cmd.position[1]

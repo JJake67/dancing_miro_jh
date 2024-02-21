@@ -3,7 +3,7 @@
     </node>
     <node pkg = "dancing_miro" type = "illum_pub.py" name = "led_moves" output = "screen">
     </node>
-    <node pkg = "dancing_miro" type = "body_moves.py" name = "body_moves" output = "screen" >
+    <node pkg = "dancing_miro" type = "movement.py" name = "movement" output = "screen" >
     </node>
 </launch>
 
@@ -14,6 +14,8 @@
     <node pkg = "dancing_miro" type = "illum_pub.py" name = "led_moves" output = "screen">
     </node>
     <node pkg = "dancing_miro" type = "point_to_sound.py" name = "hearing" output = "screen">
+    </node>
+    <node pkg = "dancing_miro" type = "point_to_sound.py" name = "point_to_sound" output = "screen" >
     </node>
 </launch>
 -->

@@ -17,11 +17,28 @@ import matplotlib.animation as animation
 from geometry_msgs.msg import Twist, TwistStamped
 import time
 
+from dotenv import load_dotenv
+from requests import post, get
+import base64
+import json
+#import PySimpleGUI as sg
+import random
+from io import BytesIO
+import requests, json
+import urllib.request
+import tkinter
+import asyncio
+from shazamio import Shazam
+
 
 try:  # For convenience, import this util separately
     from miro2.lib import wheel_speed2cmd_vel  # Python 3
 except ImportError:
     from miro2.utils import wheel_speed2cmd_vel  # Python 2
+
+
+
+print('Get current working directory : ', os.getcwd())
 
 
 class AudioClient():
@@ -86,23 +103,25 @@ class AudioClient():
         self.tail_ys = np.zeros(self.x_len)
         self.tail_line, = self.tail_plot.plot(self.tail_xs, self.tail_ys, linewidth=0.5, color="c")
 
-        self.ani = animation.FuncAnimation(self.fig, self.update_line, fargs=(self.left_ear_ys,self.right_ear_ys, self.head_ys, self.tail_ys,), init_func=self.animation_init, interval=10, blit=False)
+        #self.ani = animation.FuncAnimation(self.fig, self.update_line, fargs=(self.left_ear_ys,self.right_ear_ys, self.head_ys, self.tail_ys,), init_func=self.animation_init, interval=10, blit=False)
         self.fig.subplots_adjust(hspace=0, wspace=0)
 
         self.input_mics = np.zeros((self.x_len, self.no_of_mics))
-        print(self.input_mics) 
+        #print(self.input_mics) 
 
         # which miro
         topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
        
         # subscribers
-        
+        # save previous head data
+        self.tmp = []
+
         self.sub_mics = rospy.Subscriber(topic_base_name + "/sensors/mics",
             Int16MultiArray, self.callback_mics, queue_size=1, tcp_nodelay=True)
         
         # publishers
         self.pub_push = rospy.Publisher(topic_base_name + "/core/mpg/push", miro.msg.push, queue_size=0)
-        #self.pub_wheels = rospy.Publisher(topic_base_name + "/control/cmd_vel", TwistStamped, queue_size=0)
+        self.pub_wheels = rospy.Publisher(topic_base_name + "/control/cmd_vel", TwistStamped, queue_size=0)
 
         # prepare push message
         self.msg_push = miro.msg.push()
@@ -117,22 +136,24 @@ class AudioClient():
 
         # time
         self.frame_p = None
-        #self.msg_wheels = TwistStamped()
+        self.msg_wheels = TwistStamped()
         self.controller = miro.lib.PoseController()
-        #self.cmd_vel = miro.lib.DeltaPose()
+        self.cmd_vel = miro.lib.DeltaPose()
 
         # save previous head data
-        self.tmp = []
+        #self.tmp = []
         # dynamic threshold
         self.thresh = 0
         self.thresh_min = 0.03
-    """
+    
     def drive(self, speed_l=0.1, speed_r=0.1):  # (m/sec, m/sec)
         
         #Wrapper to simplify driving MiRo by converting wheel speeds to cmd_vel
-        
+
+        #loop = asyncio.get_event_loop()
+        #loop.run_until_complete(main())
         # Prepare an empty velocity command message
-        #msg_cmd_vel = TwistStamped()
+        msg_cmd_vel = TwistStamped()
 
         # Desired wheel speed (m/sec)
         wheel_speed = [speed_l, speed_r]
@@ -146,7 +167,7 @@ class AudioClient():
 
         # Publish message to control/cmd_vel topic
         self.pub_wheels.publish(self.msg_wheels)
-    """
+
 
     def callback_mics(self, data):
         # data for angular calculation
@@ -155,7 +176,7 @@ class AudioClient():
         now = rospy.Time.now()
         zero_time = rospy.Time()
 
-        print ('Fields are', now.secs, now.nsecs)
+        #print ('Fields are', now.secs, now.nsecs)
 
         # Time arithmetic
         five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
@@ -211,7 +232,7 @@ class AudioClient():
             self.status_code = 0 
 
     def lock_onto_sound(self,ae_head):
-        
+        print(" RIGHT here?")
         # detect if it is the frame within the same event
         # error may occur when the sound source is nearby the 90 degree of each side of MiRo
         # this is because the sample rate is not high enough for calculating in a higher accuracy
@@ -237,7 +258,7 @@ class AudioClient():
         T1=0
         while(T1 <= Tf):
 
-            #self.drive(v*2,v*2)
+            self.drive(v,v)
             self.msg_wheels.twist.linear.x = 0.0
             self.msg_wheels.twist.angular.z = v*2
 
@@ -255,8 +276,20 @@ class AudioClient():
         # This switch loops through MiRo behaviours:
         # Listen to sound, turn to the sound source
         self.status_code = 0
+        rospy.sleep(0.5)
         while not rospy.core.is_shutdown():
+            
+            #load_dotenv()
 
+            #client_id = os.getenv("CLIENT_ID")
+            #client_secret = os.getenv("CLIENT_SECRET")
+
+            #async def main():
+                #shazam = Shazam()
+                ## This part would need to access the MiRo's audio stream ?
+            #out = await shazam.recognize_song(r'/home/student/pkgs/mdk-230105/catkin_ws/src/spotify_API_Shazam/ShazamSpotifyAPI/data/miro_audio.mp3')
+            #print(out.title)
+            
             # Step 1. sound event detection
             if self.status_code == 1:
                 # Every once in a while, look for ball
@@ -317,5 +350,5 @@ if __name__ == "__main__":
     rospy.init_node("point_to_sound", anonymous=True)
     AudioEng = DetectAudioEngine()
     main = AudioClient()
-    plt.show() # to stop signal display next run: comment this line and line 89(self.ani...)
+    #plt.show() # to stop signal display next run: comment this line and line 89(self.ani...)
     main.loop()

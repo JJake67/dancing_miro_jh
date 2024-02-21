@@ -3,7 +3,7 @@ import librosa
 import IPython.display as ipd 
 
 # read audio file 
-x, sr = librosa.load('LaSolitude.wav') 
+x, sr = librosa.load('LaSolitude.mp3') 
 ipd.Audio(x, rate=sr)
 
 # approach 1 - onset detection and dynamic programming
