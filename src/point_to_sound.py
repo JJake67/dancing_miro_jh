@@ -17,29 +17,11 @@ import matplotlib.animation as animation
 from geometry_msgs.msg import Twist, TwistStamped
 import time
 
-from dotenv import load_dotenv
-from requests import post, get
-import base64
-import json
-#import PySimpleGUI as sg
-import random
-from io import BytesIO
-import requests, json
-import urllib.request
-import tkinter
-import asyncio
-from shazamio import Shazam
-
 
 try:  # For convenience, import this util separately
     from miro2.lib import wheel_speed2cmd_vel  # Python 3
 except ImportError:
     from miro2.utils import wheel_speed2cmd_vel  # Python 2
-
-
-
-print('Get current working directory : ', os.getcwd())
-
 
 class AudioClient():
    

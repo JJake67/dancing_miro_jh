@@ -141,7 +141,7 @@ class client:
 		if self.mode == "record" or self.mode == "record4":
 
 			# write output file
-			outfilename = directory + "/data/miro_audio.wav'
+			outfilename = directory + "/data/miro_audio.wav"
 			file = wave.open(outfilename, 'w')
 
 			file.setsampwidth(2)
