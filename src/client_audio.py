@@ -44,6 +44,7 @@ import pydub
 
 import miro2 as miro
 
+directory = os.getcwd()
 # amount to keep the buffer stuffed - larger numbers mean
 # less prone to dropout, but higher latency when we stop
 # streaming. with a read-out rate of 8k, 4000 samples will
@@ -140,7 +141,7 @@ class client:
 		if self.mode == "record" or self.mode == "record4":
 
 			# write output file
-			outfilename = '/home/student/mdk/catkin_ws/src/spotify_API_Shazam/ShazamSpotifyAPI/data/miro_audio.wav'
+			outfilename = directory + "/data/miro_audio.wav'
 			file = wave.open(outfilename, 'w')
 
 			file.setsampwidth(2)
