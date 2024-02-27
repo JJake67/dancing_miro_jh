@@ -54,6 +54,7 @@ class AudioClient():
         self.fig = plt.figure()
         self.fig.suptitle("Microphones") # Give figure title
 
+        # ALL THIS IS FOR GRAPHS
         #HEAD
         self.head_plot = self.fig.add_subplot(4,1,3)
         self.head_plot.set_ylim([-33000, 33000])
