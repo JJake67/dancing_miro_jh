@@ -54,7 +54,7 @@ class JointPublisher(object):
 
     # a sample on how the miro can blink
     def blink_sample(self):
-        current_time = rtime.time()
+        current_time = time.time()
         set_angle = np.sin(self.blink_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
