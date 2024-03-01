@@ -158,6 +158,31 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,tail,0,0,0,0]
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    # I think for all the kinematic stuff MAX = 1, MIN = 0, thats why they used sine generator 
+    # NEED TO DO 
+    # Define a lot of functions that execute SPECIFIC dance moves 
+    #   Gonna Need Around ~20 Start with 5 
+    #   - Rock One (Head Banging)
+    #   - Pop One (Happy Dancing)
+    #   - Soul One (Eyes Closed, Slow moves, Boppy?)
+    #   - The Robot (Jerky but intentional )
+    #   - Hip-Hop One (Unts Unts Unts Unts)
+    # Define the base function that will run autonomously when a specific dance move is being performed.
+        
+    def the_Robot(self,t_start,t_end, speed):
+        print ("Doing The Robot")
+
+    def head_Banging(self,t_start,t_end,speed):
+        print ("Head Banging")
+        #current_time = rospy.time.now()
+        #set_angle = np.sin(self.time_scale*(current_time - self.start))
+        #tilt = set_angle
+        #lift = set_angle
+        #yaw = self.kinematic_joint_cmd.position[0]
+        #pitch = self.kinematic_joint_cmd.position[1]
+        #self.set_move_kinematic( tilt, lift, yaw, pitch)
+        #rospy.sleep(0.05)
+
 movement = JointPublisher()
 t0 = rospy.Time.now().to_sec()
 while not rospy.is_shutdown():
