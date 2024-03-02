@@ -151,7 +151,6 @@ class AudioClient():
         # Publish message to control/cmd_vel topic
         self.pub_wheels.publish(self.msg_wheels)
 
-
     def callback_mics(self, data):
         # data for angular calculation
         self.audio_event = AudioEng.process_data(data.data)
@@ -191,8 +190,7 @@ class AudioClient():
         data = np.transpose(data.reshape((self.no_of_mics, 500)))
         data = np.flipud(data)
         self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
-
-    
+ 
     def voice_accident(self):
         m = 0.00
         if self.audio_event != []:
@@ -230,7 +228,6 @@ class AudioClient():
             print("MiRo is moving......")
             self.status_code = 0 
 
-
     def turn_to_sound(self): 
         if self.audio_event[0] is None:
             return
@@ -252,7 +249,6 @@ class AudioClient():
             time.sleep(0.02)
             T1+=0.02
 
-
     def loop(self):
         msg_wheels = TwistStamped()
 
@@ -261,17 +257,6 @@ class AudioClient():
         self.status_code = 0
         rospy.sleep(0.5)
         while not rospy.core.is_shutdown():
-            
-            #load_dotenv()
-
-            #client_id = os.getenv("CLIENT_ID")
-            #client_secret = os.getenv("CLIENT_SECRET")
-
-            #async def main():
-                #shazam = Shazam()
-                ## This part would need to access the MiRo's audio stream ?
-            #out = await shazam.recognize_song(r'/home/student/pkgs/mdk-230105/catkin_ws/src/spotify_API_Shazam/ShazamSpotifyAPI/data/miro_audio.mp3')
-            #print(out.title)
             
             # Step 1. sound event detection
             if self.status_code == 1:
@@ -288,7 +273,6 @@ class AudioClient():
             # Fall back
             else:
                 self.status_code = 1
-
 
     def update_line(self, i, left_ear_ys, right_ear_ys, head_ys, tail_ys):
         #Flip buffer so that incoming data moves in from the right
@@ -325,8 +309,6 @@ class AudioClient():
         self.tail_line.set_ydata(np.zeros(self.x_len))
         return self.left_ear_line, self.right_ear_line, self.head_line, self.tail_line,
 
-
-      
 
 if __name__ == "__main__":
 
