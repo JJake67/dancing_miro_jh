@@ -33,11 +33,71 @@ class IllumPublisher(object):
             color
         ]
         self.illumination.publish(color_change)
+    def rainbow(self):
+         # changing the rgb format into android format to be published in MiRo message
+        purple = [255,102,255]
+        blue = [0,153,255]
+        green = [132,255,152]
+        yellow = [255,255,0]
+        orange = [255,165,0]
+        red = [255,0,0]
+        colours = [purple,blue,green,red,orange,yellow]
+        color_change = UInt32MultiArray()
+        length = len(colours)
+        color = [0]*6
+        #print(colours[0][1])
+        count = 0
+        for x in colours:
+
+            color_detail = (int(x[0]),int(x[1]),int(x[2]))
+            color[count] = '0xFF%02x%02x%02x'%color_detail
+            color[count] = int(color[count], 16)
+            count = count+1
+        # six seperate leds in the miro
+        color_change.data = [
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+            color[4],
+            color[5]
+        ]
+        self.illumination.publish(color_change)
+    
+    def OppRainbow(self):
+         # changing the rgb format into android format to be published in MiRo message
+        purple = [255,102,255]
+        blue = [0,153,255]
+        green = [132,255,152]
+        yellow = [255,255,0]
+        orange = [255,165,0]
+        red = [255,0,0]
+        colours = [red,orange,yellow,purple,blue,green]
+        color_change = UInt32MultiArray()
+        length = len(colours)
+        color = [0]*6
+        #print(colours[0][1])
+        count = 0
+        for x in colours:
+
+            color_detail = (int(x[0]),int(x[1]),int(x[2]))
+            color[count] = '0xFF%02x%02x%02x'%color_detail
+            color[count] = int(color[count], 16)
+            count = count+1
+        # six seperate leds in the miro
+        color_change.data = [
+            color[0],
+            color[1],
+            color[2],
+            color[3],
+            color[4],
+            color[5]
+        ]
+        self.illumination.publish(color_change)
 
 
 illum = IllumPublisher()
 while not rospy.is_shutdown(): #light up 3 different colors 
-    illum.set_illumination(red = 0, green = 200, blue = 200)
-    illum.set_illumination(red = 200, green = 0, blue = 200)
-    illum.set_illumination(red = 200, green = 200, blue = 0)
-    illum.set_illumination(red = 200, green = 0, blue = 0)
+    #illum.set_illumination(red = 0, green = 200, blue = 200)
+    illum.rainbow()
+    illum.OppRainbow()

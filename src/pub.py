@@ -195,7 +195,8 @@ class JointPublisher(object):
     #   - The Robot (Jerky but intentional )
     #   - Hip-Hop One (Unts Unts Unts Unts)
     # Define the base function that will run autonomously when a specific dance move is being performed.
-        
+
+    # VER 1 : Moves just look janky unintentionally 
     def the_Robot(self,t,t0):
         #print ("Doing The Robot")
         # Range of -15 to 15
@@ -205,18 +206,38 @@ class JointPublisher(object):
         #print(yaw)   
         if yaw < -10:
             act_yaw = -3
-            lift = 0.2 
         elif yaw < 5:
             act_yaw = 0
-            lift = 0.5
         else:
             act_yaw = 3
-            lift = 0.8
-        print(act_yaw)
-        
-        self.kinematic_joint_cmd.position = [0,lift,act_yaw,0]
 
+        lift_freq = 1
+        lift = self.sine_generator(0,1, 0, lift_freq, 0, t, t0)
+        if lift < -0.32:
+            act_lift = 0.1
+        elif lift < 0:
+            act_lift = 0.35
+        elif lift < 0.32:
+            act_lift = 0.65
+        else:
+            act_lift = 0.9
+        print(lift)
+        
+        self.kinematic_joint_cmd.position = [0,act_lift,act_yaw,0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
+    def soul_Head_Bounce(self,t,t0):
+        self.kinematic_joint_cmd = JointState()
+
+        bounce_f = 1
+        lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
+        print(lift)
+
+        yaw_f = bounce_f
+        yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))
+        self.kinematic_joint_cmd.position = [0,lift,yaw,0]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
 
     def head_Banging(self,t,t0):
         #print ("Head Banging")
@@ -238,6 +259,14 @@ class JointPublisher(object):
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    def cosmetic_pub_test(self,t,t0):
+        self.cosmetic_joint_cmd = Float32MultiArray()
+
+        blink_f=1
+        blink= self.sine_generator(0,0,0.5,blink_f,t,t0)
+        self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
+
 movement = JointPublisher()
 t0 = rospy.Time.now().to_sec()
 while not rospy.is_shutdown():
@@ -248,11 +277,13 @@ while not rospy.is_shutdown():
     #movement.yaw_movement(t, t0)
     #movement.pitch_movement(t, t0)
     #movement.head_Banging(t,t0)
-    movement.the_Robot(t,t0)
+    #movement.the_Robot(t,t0)
+    movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
+    #movement.cosmetic_pub_test(t,t0)
     rospy.sleep(0.05)
     #movement.blink_sample()
-    
+    # 
     
     #movement.ear_sample()
     #movement.tail_sample()
