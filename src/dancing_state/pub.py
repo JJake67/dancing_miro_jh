@@ -24,7 +24,7 @@ class JointPublisher(object):
         self.cosmetic_pub = rospy.Publisher(
             self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
-        self.time_scale = 0.5 #for how fast the movement is 
+        self.time_scale = 0.1#for how fast the movement is 
         self.blink_freq = 0.5 #for how fast the movement is 
         self.ear_freq = 1 #for how fast the movement is 
         self.kinematic_joint_cmd = JointState()
@@ -54,7 +54,7 @@ class JointPublisher(object):
 
     # a sample on how the miro can blink
     def blink_sample(self):
-        current_time = time.time()
+        current_time = rospy.get_time()
         set_angle = np.sin(self.blink_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
@@ -67,7 +67,7 @@ class JointPublisher(object):
    
     # ear movement sample
     def ear_sample(self):
-        current_time = rospy.time.now()
+        current_time = rospy.get_time()
         set_angle = np.sin(self.ear_freq*(current_time - self.start))
         tail_pitch = self.cosmetic_joint_cmd.data[0]
         tail_yaw = self.cosmetic_joint_cmd.data[1]
@@ -78,9 +78,10 @@ class JointPublisher(object):
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         rospy.sleep(0.05)
    
+    #rospy.time.noW() NOT A THING USE rospy.get_time()
     #tail
     def tail_sample(self):
-        current_time = rospy.time.now()
+        current_time = rospy.get_time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         left_eye = self.cosmetic_joint_cmd.data[0]
         right_eye = self.cosmetic_joint_cmd.data[1]
@@ -90,21 +91,24 @@ class JointPublisher(object):
         right_ear = self.cosmetic_joint_cmd.data[3]
         self.set_move_cosmetic(tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear)
         #rospy.sleep(0.05)
-    
+    #tilt RANGE (0 - 1)
     #head movements/ up and down
     def head_sample(self):
-        current_time = rospy.time.now()
+        current_time = rospy.get_time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         tilt = set_angle
         lift = set_angle
         yaw = self.kinematic_joint_cmd.position[0]
         pitch = self.kinematic_joint_cmd.position[1]
-        self.set_move_kinematic( tilt, lift, yaw, pitch)
+        #self.set_move_kinematic(tilt, lift, yaw, pitch)
+        self.set_move_kinematic(tilt,0,0,0)
+        print(set_angle)
+        #self.set_move_kinematic(0,0,yaw,pitch)
         rospy.sleep(0.05)
 
     #head movements / left and right 
     def rotate_sample(self):
-        current_time = rospy.time.now()
+        current_time = rospy.get_time()
         set_angle = np.sin(self.time_scale*(current_time - self.start))
         tilt = self.kinematic_joint_cmd.position[0]
         lift = self.kinematic_joint_cmd.position[1]
@@ -116,24 +120,40 @@ class JointPublisher(object):
     def sine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
 
+    def cosine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
+        return ((mx-mn) * np.cos (freq*(t-t0) + phase) / 2.0 + offset)
+    # Rotates Head Side to Side 
+    # Yaw Freq determines how quickly he swaps directions NOT his speed 
     def yaw_movement(self, t, t0):
         self.kinematic_joint_cmd = JointState()
-        yaw_freq = 3
+        
+        yaw_freq = 0.5
         yaw = self.sine_generator(55, -55, 0, yaw_freq, 0, t, t0)
         print(yaw)
         self.kinematic_joint_cmd.position = [0, 0, yaw, 0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
+    # Rotates Head Up and Down 
+    # Pitch Freq determines how often he swaps directions
     #def pitch_movement(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
     def pitch_movement(self, t, t0):
         self.kinematic_joint_cmd = JointState()
         pitch_freq = 3
         pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
         print(pitch)
-        self.kinematic_joint_cmd.position = [0,0,0,pitch]
+        self.kinematic_joint_cmd.position = [0,2,0,pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
         #pass
     
+    def yaw_and_pitch(self,t,t0):
+        self.kinematic_joint_cmd = JointState()
+        pitch_freq = 2 
+        yaw_freq = 2
+        pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
+        yaw = self.cosine_generator(55, -55, 0, yaw_freq, 0, t, t0)
+        self.kinematic_joint_cmd.position = [0, 0, yaw, pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
     def blink_m(self,t,t0):
         self.cosmetic_joint_cmd = Float32MultiArray()
         blink_f=1
@@ -158,6 +178,13 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,tail,0,0,0,0]
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    # Cosmetic_joint_cmd.data : [?, tail, eye, eye, ear, ear]
+    # Kinematic_joint_cmd.data : [tilt, life, yaw, pitch]
+    # Lift = Neck
+    # Tilt = Head Tilt ( THOUGH SEEMS TO BE NOT REAL)
+    # Yaw = Head Facing Left / Right
+    # Pitch = Head Facing Up / Down
+
     # I think for all the kinematic stuff MAX = 1, MIN = 0, thats why they used sine generator 
     # NEED TO DO 
     # Define a lot of functions that execute SPECIFIC dance moves 
@@ -169,33 +196,65 @@ class JointPublisher(object):
     #   - Hip-Hop One (Unts Unts Unts Unts)
     # Define the base function that will run autonomously when a specific dance move is being performed.
         
-    def the_Robot(self,t_start,t_end, speed):
-        print ("Doing The Robot")
+    def the_Robot(self,t,t0):
+        #print ("Doing The Robot")
+        # Range of -15 to 15
+        yaw_freq = 2
+        self.kinematic_joint_cmd = JointState()
+        yaw = self.sine_generator(8, -22, 0, yaw_freq, 0, t, t0)     
+        #print(yaw)   
+        if yaw < -10:
+            act_yaw = -3
+            lift = 0.2 
+        elif yaw < 5:
+            act_yaw = 0
+            lift = 0.5
+        else:
+            act_yaw = 3
+            lift = 0.8
+        print(act_yaw)
+        
+        self.kinematic_joint_cmd.position = [0,lift,act_yaw,0]
 
-    def head_Banging(self,t_start,t_end,speed):
-        print ("Head Banging")
-        #current_time = rospy.time.now()
-        #set_angle = np.sin(self.time_scale*(current_time - self.start))
-        #tilt = set_angle
-        #lift = set_angle
-        #yaw = self.kinematic_joint_cmd.position[0]
-        #pitch = self.kinematic_joint_cmd.position[1]
-        #self.set_move_kinematic( tilt, lift, yaw, pitch)
-        #rospy.sleep(0.05)
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
+    def head_Banging(self,t,t0):
+        #print ("Head Banging")
+        self.kinematic_joint_cmd = JointState()
+        self.cosmetic_joint_cmd = Float32MultiArray()
+
+        blink_f=1
+        blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
+        self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
+        #print(blink)
+
+        pitch_freq = 3.4
+        pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
+        lift_freq = 3.4
+        lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
+        #print(pitch)
+        self.kinematic_joint_cmd.position = [0,lift,0,pitch]
+
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
 movement = JointPublisher()
 t0 = rospy.Time.now().to_sec()
 while not rospy.is_shutdown():
     t = rospy.Time.now().to_sec()
-    movement.blink_m(t,t0)
+    #ovement.blink_m(t,t0)
     #movement.ear_m(t,t0)
     #movement.tail(t,t0)
     #movement.yaw_movement(t, t0)
-    movement.pitch_movement(t, t0)
+    #movement.pitch_movement(t, t0)
+    #movement.head_Banging(t,t0)
+    movement.the_Robot(t,t0)
+    #movement.yaw_and_pitch(t,t0)
     rospy.sleep(0.05)
     #movement.blink_sample()
     
-    # movement.ear_sample()
+    
+    #movement.ear_sample()
     #movement.tail_sample()
     #movement.head_sample()
     #movement.rotate_sample()
