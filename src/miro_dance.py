@@ -13,9 +13,25 @@ class MiroDance(object):
     def __init__(self):
         # Func Initialisations
         # Empty 2D arrays for song data
+        self.genre = ""
+        self.duration = 0.0 
+        self.tempo = 0.0
+        self.end_of_fade_in = 0.0
+        self.track_start = 0.0
+        
+        self.bars_array = []
+        self.sections = [] 
 
+        # Audio Features 
+        #   Valence = Estimate of how positive the song is 
+        self.danceability = 0.0
+        self.valence = 0.0 
+
+        # Required for device to access Spotify API app 
         self.client_id = os.getenv("CLIENT_ID")
         self.client_secret = os.getenv("CLIENT_SECRET")
+        
+        self.set_track_data()
         # SUBSCRIBERS
 
         # PUBLISHERS
@@ -23,35 +39,61 @@ class MiroDance(object):
         # body_msg : body movements
         # light_msg : lights commands
         # head_msg : head and neck commands
-        print("nothin")
+        
         #NEEDS ALL THE SPOTIFY STUFF TO START
 
     # SPOTIFY 
-    def set_song_data(self):
-        print("data,data,data")
+    def set_track_data(self):
+
+        # Finds Song on Spotify 
         url = "https://api.spotify.com/v1/search"
         token = self.get_token()
         headers = self.get_auth_headers(token)
 
         query = f"?q={song_name}&type=track&limit=1"
-
         query_url = url + query
         result = get(query_url, headers=headers)
         json_result = json.loads(result.content)["tracks"]["items"]
+
+        # If no results were found searching song name, can't continue
         if len(json_result) == 0:
             print("noor sorryyy")
             return None
         
-        # Song Code
-        print(json_result[0])
-        song_id = json_result[0]
-
-        url = f"https://api.spotify.com/v1/audio-analysis/{song_id}"
+        # Song ID
+        track = json_result[0]
+        track_id = track["id"]
+        artist_id = track["artists"][0]["id"]
+        
+        # Song Genre 
+        url = f"https://api.spotify.com/v1/artists/{artist_id}"
         result = get(url, headers=headers)
+        json_result = json.loads(result.content)
+        # Returns multiple, need to find way to differentiate as they're all kinda random
+        self.genre = json_result["genres"]
 
-        #ta daaaa
-        data_dict = json.loads(result.content)
+        # Audio Analysis
+        url = f"https://api.spotify.com/v1/audio-analysis/{track_id}"
+        result = get(url, headers=headers)
+        audio_analysis_dict = json.loads(result.content)
+        self.duration = audio_analysis_dict["track"]["duration"]
+        self.tempo = audio_analysis_dict["track"]["tempo"]
+        self.end_of_fade_in = audio_analysis_dict["track"]["end_of_fade_in"]
 
+        # Finds the time the first beat starts so each one after that will be in time
+        self.track_start = audio_analysis_dict["beats"][0]["start"]
+
+        self.bars = audio_analysis_dict["bars"]
+        self.sections = audio_analysis_dict["sections"]
+
+        # Audio Features
+        url = f"https://api.spotify.com/v1/audio-features/{track_id}"
+        result = get(url, headers=headers)
+        audio_feat_dict = json.loads(result.content)
+        self.danceability = audio_feat_dict["danceability"]
+        self.valence = audio_feat_dict["valence"]
+
+    # Needed to access Spotify App
     def get_token(self):
         auth_string = self.client_id + ":" + self.client_secret
         auth_bytes = auth_string.encode("utf-8")
@@ -67,19 +109,22 @@ class MiroDance(object):
         json_result = json.loads(result.content)
         token = json_result["access_token"]
         return token
-
+    
+    # Needed to Access Spotify App
     def get_auth_headers(token):
         return {"Authorization": "Bearer " + token}
     
     # MAIN PROGRAM LOOP 
     def loop(self):
         #Get Spotify Data For Song 
-        self.set_song_data()
-
-        #
-
-
-
+        self.set_track_data()
+        
+song_name = "Smooth Santana"
+load_dotenv()
+if __name__ == "__main__":
+    rospy.init_node("dance_MiRo",anonymous=True)
+    main = MiroDance()
+    main.loop()
 
 
 # CODE FOR MAKING this node into SERVICE_CLIENT for identify_song
@@ -95,9 +140,3 @@ class MiroDance(object):
 #response_from_server = service(request_to_server) 
 # SHOULD RETURN THE SONG NAME SO FOR NOW I'LL JUST INSERT ONE
 #print(response_from_server)
-song_name = "Smooth Santana"
-load_dotenv()
-if __name__ == "__main__":
-    rospy.init_node("dance_MiRo",anonymous=True)
-    main = MiroDance()
-    main.loop()

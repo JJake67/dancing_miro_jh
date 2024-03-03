@@ -95,7 +95,10 @@ class IllumPublisher(object):
         ]
         self.illumination.publish(color_change)
 
-
+    # FUNCTIONS NEED TO MAKE
+    # Searching for Song Lights 
+    # Genre Specific Lights
+    
 illum = IllumPublisher()
 while not rospy.is_shutdown(): #light up 3 different colors 
     #illum.set_illumination(red = 0, green = 200, blue = 200)
