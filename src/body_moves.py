@@ -27,8 +27,8 @@ from std_msgs.msg import (
     UInt16,
 )  # Used in callbacks
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
-
-import miro2 as miro  # MiRo Developer Kit library
+from dancing_miro.msg import body
+#import miro2 as miro  # MiRo Developer Kit library
 """""
 try:  # For convenience, import this util separately
     from miro2.lib import wheel_speed2cmd_vel  # Python 3
@@ -48,6 +48,7 @@ class BodyMoves(object):
     NODE_EXISTS = False  # Disables (True) / Enables (False) rospy.init_node
 
     def __init__(self):
+        self.ctrl_c = False
         """
         Class initialisation
         """
@@ -67,6 +68,13 @@ class BodyMoves(object):
         #self.rotate = TwistStamped()
         self.velocity = TwistStamped()
 
+        self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
+        rospy.loginfo("Body Move node is active...")
+
+    def cmd_callback(self,topic_message):
+        print(f'Node obtained msg: {topic_message.move_name}')
+        print(f'Node also said: {topic_message.mode}')
+    
     ## MAIN FuNCTION THAT MAKES MiRo SPIN 
     #  Function spins him at a set speed of 5 / pi for 3 seconds then stops him 
     def rotate(self):
@@ -161,15 +169,17 @@ class BodyMoves(object):
         self.velocity.twist.linear.x = 0
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.1)
+        
+        # EVEN IF CTRL C WILL KEEP PRINTING INFO UNTIL DONE 
         while rospy.Time.now() < (t0 + self.ACTION_DURATION):
-            print((rospy.Time.now()-t0).to_sec())
+            #print((rospy.Time.now()-t0).to_sec())
             if (rospy.Time.now() - t0).to_sec() >= 6.0:
                 t0 = rospy.Time.now()
                 self.velocity.twist.angular.z = self.velocity.twist.angular.z * -1
                 self.pub_cmd_vel.publish(self.velocity)
             self.pub_cmd_vel.publish(self.velocity)
             rospy.sleep(0.1)
-            print(self.velocity.twist.angular.z)
+            #print(self.velocity.twist.angular.z)
             
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
@@ -178,6 +188,7 @@ class BodyMoves(object):
 
 movement = BodyMoves()
 while not rospy.is_shutdown():
+    rospy.sleep(1)
     movement.rotate_m2()
     ##print("ROTATION M2 DONE")
     ##rospy.sleep(1)

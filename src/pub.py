@@ -5,7 +5,8 @@ import rospy            # ROS Python interface
 import numpy as np
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray
-from std_msgs.msg import UInt32MultiArray
+from std_msgs.msg import UInt32MultiArray, String
+from dancing_miro.msg import head
 
 class JointPublisher(object):
     
@@ -13,7 +14,13 @@ class JointPublisher(object):
         The following code will move the joints, cosmetic and kinematic
 
     """
+    
+    def cmd_callback(self,topic_message):
+        print(f'Node obtained msg: {topic_message.move_name}')
+        print(f'Node also said: {topic_message.mode}')
+    
     def __init__(self):
+        self.ctrl_c = False
         rospy.init_node("joint_publisher")
         self.position = None
         self.start = time.time()
@@ -24,6 +31,10 @@ class JointPublisher(object):
         self.cosmetic_pub = rospy.Publisher(
             self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
+        topic_name = "head_topic"
+        self.sub = rospy.Subscriber(topic_name, head, self.cmd_callback)
+        rospy.loginfo("Head/Neck Moves node is active...")
+
         self.time_scale = 0.1#for how fast the movement is 
         self.blink_freq = 0.5 #for how fast the movement is 
         self.ear_freq = 1 #for how fast the movement is 
@@ -231,7 +242,7 @@ class JointPublisher(object):
 
         bounce_f = 1
         lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
-        print(lift)
+        #print(lift)
 
         yaw_f = bounce_f
         yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))

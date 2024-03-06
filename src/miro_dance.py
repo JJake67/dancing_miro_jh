@@ -5,12 +5,15 @@ import base64
 import json
 from dotenv import load_dotenv
 from requests import post, get
+from std_msgs.msg import String
+from dancing_miro.msg import body, lights, head
 # from msg_place import SetString, SetStringResponse
 class MiroDance(object):
 
     # Main Node for Creating Dance Movements
 
     def __init__(self):
+        self.ctrl_c = False
         # Func Initialisations
         # Empty 2D arrays for song data
         self.genre = ""
@@ -28,19 +31,29 @@ class MiroDance(object):
         self.valence = 0.0 
 
         # Required for device to access Spotify API app 
-        self.client_id = os.getenv("CLIENT_ID")
-        self.client_secret = os.getenv("CLIENT_SECRET")
+        #self.client_id = os.getenv("CLIENT_ID")
+        #self.client_secret = os.getenv("CLIENT_SECRET")
         
-        self.set_track_data()
+        #self.set_track_data()
         # SUBSCRIBERS
 
         # PUBLISHERS
-        # localise_now : point_to_sound msg
         # body_msg : body movements
+        topic_name = "body_topic"
+        self.bodyPub = rospy.Publisher(topic_name, body, queue_size=10)
+
+        topic_name = "head_topic"
+        self.headPub = rospy.Publisher(topic_name, head, queue_size=10)
+
+        topic_name = "light_topic"
+        self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
+
+        # localise_now : point_to_sound msg
         # light_msg : lights commands
         # head_msg : head and neck commands
         
         #NEEDS ALL THE SPOTIFY STUFF TO START
+        rospy.loginfo("Main Node is Active...")
 
     # SPOTIFY 
     def set_track_data(self):
@@ -114,13 +127,39 @@ class MiroDance(object):
     def get_auth_headers(token):
         return {"Authorization": "Bearer " + token}
     
+    def publish_body_cmds(self):
+        message = body()
+        message.move_name = "Head Bang yee"
+        message.mode = True
+        self.bodyPub.publish(message)
+        rospy.sleep(1)
+
+    def publish_lights_cmd(self):
+        message = lights()
+        message.move_name = "rainbow"
+        self.lightsPub.publish(message)
+        rospy.sleep(1)
+
+    def publish_head_cmd(self):
+        message = head()
+        message.move_name = "head bang"
+        message.mode = True
+        self.headPub.publish(message)
+        rospy.sleep(1)
+
     # MAIN PROGRAM LOOP 
     def loop(self):
         #Get Spotify Data For Song 
-        self.set_track_data()
+        #self.set_track_data()
+        while not rospy.is_shutdown():
+            self.publish_body_cmds()
+            self.publish_head_cmd()
+            self.publish_lights_cmd()
         
-song_name = "Smooth Santana"
-load_dotenv()
+
+        
+#song_name = "Smooth Santana"
+#load_dotenv()
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
     main = MiroDance()

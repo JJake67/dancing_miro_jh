@@ -2,19 +2,25 @@
 import os
 import rospy            # ROS Python interface
 from std_msgs.msg import UInt32MultiArray
-
+from dancing_miro.msg import lights
 class IllumPublisher(object):
     
     """
         The following code will change color
     """
     def __init__(self):
+        self.ctrl_c = False
         rospy.init_node("illumination_publisher")
         self.position = None
         topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
         self.illumination = rospy.Publisher(
             topic_base_name + "/control/illum", UInt32MultiArray, queue_size=0
         )
+        
+        self.sub = rospy.Subscriber("light_topic", lights,self.cmd_callback)
+
+    def cmd_callback(self,topic_msg):
+        print(f'Node obtained msg: {topic_msg.move_name}')
 
     # set color
     def set_illumination(self, red = 0, green = 0, blue = 0):
@@ -102,5 +108,6 @@ class IllumPublisher(object):
 illum = IllumPublisher()
 while not rospy.is_shutdown(): #light up 3 different colors 
     #illum.set_illumination(red = 0, green = 200, blue = 200)
-    illum.rainbow()
+    #illum.rainbow()
     illum.OppRainbow()
+    #illum.
