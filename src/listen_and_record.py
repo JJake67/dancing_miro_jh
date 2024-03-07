@@ -82,7 +82,7 @@ class listen_and_record():
         # RECORDING INITIALISATIONS >>>>>>>
 
         # Create robot interface
-        self.interface = miro.lib.RobotInterface()
+        self.interface = miro.lib.RobotInterface(node_name=None)
 
         self.micbuf = np.zeros((0, 4), 'uint16')
         self.outbuf = None
