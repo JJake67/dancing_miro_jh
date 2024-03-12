@@ -23,7 +23,10 @@ class MiroDance(object):
         self.track_start = 0.0
         
         self.bars_array = []
-        self.sections = [] 
+        #self.sections = [] 
+        
+        # For Test Purposes 
+        self.sections = [0,3,6,10]
 
         # Audio Features 
         #   Valence = Estimate of how positive the song is 
@@ -134,11 +137,16 @@ class MiroDance(object):
         self.bodyPub.publish(message)
         rospy.sleep(1)
 
-    def publish_lights_cmd(self):
+    def publish_lights_cmd(self, value):
+
         message = lights()
-        message.move_name = "rainbow"
+        if value == True:
+            message.move_name = "rainbow"
+        else : 
+            message.move_name = "blue"
+
         self.lightsPub.publish(message)
-        rospy.sleep(1)
+        rospy.sleep(0.02)
 
     def publish_head_cmd(self):
         message = head()
@@ -151,10 +159,22 @@ class MiroDance(object):
     def loop(self):
         #Get Spotify Data For Song 
         #self.set_track_data()
+        start_time = rospy.get_time()
+        print(start_time)
+        autoMode = False
         while not rospy.is_shutdown():
-            self.publish_body_cmds()
-            self.publish_head_cmd()
-            self.publish_lights_cmd()
+            # Loop through segment array 
+            for x in range(0,len(self.sections)):
+                current_time = rospy.get_time()-start_time
+                print(current_time)
+                print(self.sections[x])
+                while current_time < self.sections[x]: 
+                    #self.publish_body_cmds()
+                    #self.publish_head_cmd()
+                    self.publish_lights_cmd(autoMode)
+                    rospy.sleep(0.5)
+                    current_time = rospy.get_time()-start_time
+                autoMode = not autoMode
         
 
         

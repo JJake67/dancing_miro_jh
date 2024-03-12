@@ -189,7 +189,7 @@ class BodyMoves(object):
 movement = BodyMoves()
 while not rospy.is_shutdown():
     rospy.sleep(1)
-    movement.rotate_m2()
+    #movement.rotate_m2()
     ##print("ROTATION M2 DONE")
     ##rospy.sleep(1)
     #movement.rotate()

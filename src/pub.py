@@ -289,7 +289,7 @@ while not rospy.is_shutdown():
     #movement.pitch_movement(t, t0)
     #movement.head_Banging(t,t0)
     #movement.the_Robot(t,t0)
-    movement.soul_Head_Bounce(t,t0)
+    #movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
     #movement.cosmetic_pub_test(t,t0)
     rospy.sleep(0.05)
