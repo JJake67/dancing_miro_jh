@@ -5,7 +5,7 @@ import numpy as np
 
 y, sr = librosa.load('smooth (2).wav')
 hop_length = 512 
-"""
+
 # Compute local onset autocorrelation
 oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
 times = librosa.times_like(oenv, sr=sr, hop_length=hop_length)
@@ -28,11 +28,11 @@ librosa.display.specshow(tempogram, sr=sr, hop_length=hop_length,
                          ax=ax[1])
 plt.show()
 
-#ax[1].axhline(tempo, color='w', linestyle='--', alpha=1,
-#            label='Estimated tempo={:g}'.format(tempo))
-#ax[1].legend(loc='upper right')
-#ax[1].set(title='Tempogram')
-#print ("Estimated tempo bpm = " ,tempo)
+ax[1].axhline(tempo, color='w', linestyle='--', alpha=1,
+            label='Estimated tempo={:g}'.format(tempo))
+ax[1].legend(loc='upper right')
+ax[1].set(title='Tempogram')
+print ("Estimated tempo bpm = " ,tempo)
 """
 #compute fundamental freq 
 fmin=librosa.note_to_hz('C0')
@@ -61,7 +61,7 @@ print(total)
 print(totalLength)
 total = total / totalLength
 print("freq: ",total)
-"""
+
 fig, ax = plt.subplots()
 D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
 img = librosa.display.specshow(D, x_axis='time', y_axis='log', ax=ax)
