@@ -72,7 +72,7 @@ ax.legend(loc='upper right')
 avgFreq = sum(f0)/len(f0)
 #plt.show()
 """
-
+#Yellow
 #client_id = os.getenv("CLIENT_ID")
 client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
 #client_secret = os.getenv("CLIENT_SECRET")
