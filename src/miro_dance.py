@@ -14,8 +14,6 @@ class MiroDance(object):
 
     def __init__(self):
         self.ctrl_c = False
-        # Func Initialisations
-        # Empty 2D arrays for song data
         self.genre = ""
         self.duration = 0.0 
         #self.tempo = 0.0
@@ -30,13 +28,12 @@ class MiroDance(object):
         self.tempo = 120
 
         # Audio Features 
-        #   Valence = Estimate of how positive the song is 
         self.danceability = 0.0
         self.valence = 0.0 
 
         # Required for device to access Spotify API app 
-        #self.client_id = os.getenv("CLIENT_ID")
-        #self.client_secret = os.getenv("CLIENT_SECRET")
+        #client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
+        #client_secret = "a35830533528441f9ae304893a279b38"
         
         #self.set_track_data()
         # SUBSCRIBERS
@@ -53,11 +50,8 @@ class MiroDance(object):
         self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
 
         # localise_now : point_to_sound msg
-        # light_msg : lights commands
-        # head_msg : head and neck commands
         
-        #NEEDS ALL THE SPOTIFY STUFF TO START
-        rospy.loginfo("Main Node is Active...")
+        rospy.loginfo("Miro_Dance Node is Active...")
 
     # SPOTIFY 
     def set_track_data(self):
@@ -67,7 +61,7 @@ class MiroDance(object):
         token = self.get_token()
         headers = self.get_auth_headers(token)
 
-        query = f"?q={song_name}&type=track&limit=1"
+        query = f"?q={self.song_name}&type=track&limit=1"
         query_url = url + query
         result = get(query_url, headers=headers)
         json_result = json.loads(result.content)["tracks"]["items"]
@@ -168,7 +162,9 @@ class MiroDance(object):
 
     # MAIN PROGRAM LOOP 
     def loop(self):
-        #Get Spotify Data For Song 
+        # Identify Song
+        #self.song_name = result
+        # Retrieve Spotify Data, set object values to that data
         #self.set_track_data()
 
         start_time = rospy.get_time()
@@ -176,9 +172,9 @@ class MiroDance(object):
         while not rospy.is_shutdown():
             for x in range(0,len(self.sections)):
                 current_time = rospy.get_time()-start_time
-                #print(current_time)
-                #print(self.sections[x])
                 while current_time < self.sections[x]: 
+
+                    #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
                     #self.publish_body_cmds(autoMode)
                     #self.publish_head_cmd(autoMode)
                     self.publish_lights_cmd(autoMode)

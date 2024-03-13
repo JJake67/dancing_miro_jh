@@ -5,9 +5,6 @@ from std_msgs.msg import UInt32MultiArray
 from dancing_miro.msg import lights
 class IllumPublisher(object):
     
-    """
-        The following code will change color
-    """
     def __init__(self):
         self.tempo = 0
         self.command = ""
@@ -42,6 +39,7 @@ class IllumPublisher(object):
             color
         ]
         self.illumination.publish(color_change)
+    
     def rainbow(self,colours):
          # changing the rgb format into android format to be published in MiRo message
         color_change = UInt32MultiArray()
