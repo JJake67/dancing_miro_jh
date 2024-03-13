@@ -18,7 +18,7 @@ class MiroDance(object):
         # Empty 2D arrays for song data
         self.genre = ""
         self.duration = 0.0 
-        self.tempo = 0.0
+        #self.tempo = 0.0
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
         
@@ -27,6 +27,7 @@ class MiroDance(object):
         
         # FOR TESTING
         self.sections = [0,6,12,18,24,30,36,42,48]
+        self.tempo = 120
 
         # Audio Features 
         #   Valence = Estimate of how positive the song is 
@@ -132,6 +133,7 @@ class MiroDance(object):
     
     def publish_body_cmds(self, value):
         message = body()
+        message.tempo = self.tempo
         if value == True:
             message.move_name = "Spin Big"
             message.mode = True
@@ -142,8 +144,8 @@ class MiroDance(object):
         rospy.sleep(0.05)
 
     def publish_lights_cmd(self, value):
-
         message = lights()
+        message.tempo = self.tempo
         if value == True:
             message.move_name = "blue"
         else : 
@@ -154,6 +156,7 @@ class MiroDance(object):
 
     def publish_head_cmd(self, value):
         message = head()
+        message.tempo = self.tempo
         if value == True:
             message.move_name = "head bang"
             message.mode = True
@@ -176,8 +179,8 @@ class MiroDance(object):
                 #print(current_time)
                 #print(self.sections[x])
                 while current_time < self.sections[x]: 
-                    self.publish_body_cmds(autoMode)
-                    self.publish_head_cmd(autoMode)
+                    #self.publish_body_cmds(autoMode)
+                    #self.publish_head_cmd(autoMode)
                     self.publish_lights_cmd(autoMode)
                     rospy.sleep(0.5)
                     current_time = rospy.get_time()-start_time

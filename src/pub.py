@@ -18,9 +18,12 @@ class JointPublisher(object):
     def cmd_callback(self,topic_message):
         print(f'Node obtained msg: {topic_message.move_name}')
         print(f'Node also said: {topic_message.mode}')
+        #print(topic_message.tempo)
         self.command = topic_message.move_name 
+        self.tempo = 60 / topic_message.tempo
     
     def __init__(self):
+        self.tempo = 0.5
         self.command = ""
         self.ctrl_c = False
         rospy.init_node("joint_publisher")
@@ -195,7 +198,7 @@ class JointPublisher(object):
     # Kinematic_joint_cmd.data : [tilt, life, yaw, pitch]
     # Lift = Neck
     # Tilt = Head Tilt ( THOUGH SEEMS TO BE NOT REAL)
-    # Yaw = Head Facing Left / Right
+    # Yaw = Head Facing Left / Right  * LESS JERKY WHEN FASTER IDK WHY 
     # Pitch = Head Facing Up / Down
 
     # I think for all the kinematic stuff MAX = 1, MIN = 0, thats why they used sine generator 
@@ -238,11 +241,29 @@ class JointPublisher(object):
         
         self.kinematic_joint_cmd.position = [0,act_lift,act_yaw,0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
+    
+    def head_bop(self,t,t0):
+        self.kinematic_joint_cmd = JointState()
+        freq = 2
+        pitch = abs(self.sine_generator(15,-15,0,freq,0,t,t0))-7
+
+        self.kinematic_joint_cmd.position = [0,0,0,pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
+    # More Square
+    def full_head_spin(self,t,t0):
+        self.kinematic_joint_cmd = JointState()
+        freq = 1
+        yaw = self.sine_generator(55,-55,0,freq,0,t,t0)
+        pitch = self.cosine_generator(8,-22,0,freq,0,t,t0)
+
+        self.kinematic_joint_cmd.position = [0,0,yaw,pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
     def soul_Head_Bounce(self,t,t0):
         self.kinematic_joint_cmd = JointState()
 
-        bounce_f = 1
+        bounce_f = self.tempo
         lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
         #print(lift)
 
@@ -287,10 +308,10 @@ class JointPublisher(object):
             movement.head_Banging(t,t0)
 
 movement = JointPublisher()
-t0 = rospy.Time.now().to_sec()
+t0 = rospy.get_time()
 while not rospy.is_shutdown():
-    t = rospy.Time.now().to_sec()
-    movement.loop(t0,t)
+    t = rospy.get_time()
+    #movement.loop(t0,t)
     #ovement.blink_m(t,t0)
     #movement.ear_m(t,t0)
     #movement.tail(t,t0)
@@ -301,7 +322,8 @@ while not rospy.is_shutdown():
     #movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
     #movement.cosmetic_pub_test(t,t0)
-    rospy.sleep(0.05)
+    movement.head_bop(t,t0)
+    rospy.sleep(0.02)
     #movement.blink_sample()
     # 
 
