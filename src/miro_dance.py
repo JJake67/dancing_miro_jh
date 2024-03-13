@@ -23,7 +23,10 @@ class MiroDance(object):
         self.track_start = 0.0
         
         self.bars_array = []
-        self.sections = [] 
+        #self.sections = [] 
+        
+        # For Test Purposes 
+        self.sections = [0,6,12,18,24,30,36,42,48]
 
         # Audio Features 
         #   Valence = Estimate of how positive the song is 
@@ -127,34 +130,59 @@ class MiroDance(object):
     def get_auth_headers(token):
         return {"Authorization": "Bearer " + token}
     
-    def publish_body_cmds(self):
+    def publish_body_cmds(self, value):
         message = body()
-        message.move_name = "Head Bang yee"
-        message.mode = True
+        if value == True:
+            message.move_name = "Spin Big"
+            message.mode = True
+        else:
+            message.move_name = "Wait"
+            message.mode = True
         self.bodyPub.publish(message)
-        rospy.sleep(1)
+        rospy.sleep(0.05)
 
-    def publish_lights_cmd(self):
+    def publish_lights_cmd(self, value):
+
         message = lights()
-        message.move_name = "rainbow"
-        self.lightsPub.publish(message)
-        rospy.sleep(1)
+        if value == True:
+            message.move_name = "blue"
+        else : 
+            message.move_name = "rainbow"
 
-    def publish_head_cmd(self):
+        self.lightsPub.publish(message)
+        rospy.sleep(0.05)
+
+    def publish_head_cmd(self, value):
         message = head()
-        message.move_name = "head bang"
-        message.mode = True
+        if value == True:
+            message.move_name = "head bang"
+            message.mode = True
+        else:
+            message.move_name = "soul nod"
+            message.mode = True
         self.headPub.publish(message)
-        rospy.sleep(1)
+        rospy.sleep(0.05)
 
     # MAIN PROGRAM LOOP 
     def loop(self):
         #Get Spotify Data For Song 
         #self.set_track_data()
+        start_time = rospy.get_time()
+        #print(start_time)
+        autoMode = False
         while not rospy.is_shutdown():
-            self.publish_body_cmds()
-            self.publish_head_cmd()
-            self.publish_lights_cmd()
+            # Loop through segment array 
+            for x in range(0,len(self.sections)):
+                current_time = rospy.get_time()-start_time
+                #print(current_time)
+                #print(self.sections[x])
+                while current_time < self.sections[x]: 
+                    self.publish_body_cmds(autoMode)
+                    self.publish_head_cmd(autoMode)
+                    self.publish_lights_cmd(autoMode)
+                    rospy.sleep(0.5)
+                    current_time = rospy.get_time()-start_time
+                autoMode = not autoMode
         
 
         

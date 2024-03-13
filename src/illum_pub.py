@@ -9,6 +9,7 @@ class IllumPublisher(object):
         The following code will change color
     """
     def __init__(self):
+        self.command = ""
         self.ctrl_c = False
         rospy.init_node("illumination_publisher")
         self.position = None
@@ -21,6 +22,7 @@ class IllumPublisher(object):
 
     def cmd_callback(self,topic_msg):
         print(f'Node obtained msg: {topic_msg.move_name}')
+        self.command = topic_msg.move_name
 
     # set color
     def set_illumination(self, red = 0, green = 0, blue = 0):
@@ -69,6 +71,39 @@ class IllumPublisher(object):
             color[5]
         ]
         self.illumination.publish(color_change)
+        rospy.sleep(0.1)
+    
+    def blue(self):
+         # changing the rgb format into android format to be published in MiRo message
+        purple = [255,102,255]
+        blue = [0,153,255]
+        green = [132,255,152]
+        yellow = [255,255,0]
+        orange = [255,165,0]
+        red = [255,0,0]
+        colours = [purple,blue,green,red,orange,yellow]
+        color_change = UInt32MultiArray()
+        length = len(colours)
+        color = [0]*6
+        #print(colours[0][1])
+        count = 0
+        for x in colours:
+
+            color_detail = (int(x[0]),int(x[1]),int(x[2]))
+            color[count] = '0xFF%02x%02x%02x'%color_detail
+            color[count] = int(color[count], 16)
+            count = count+1
+        # six seperate leds in the miro
+        color_change.data = [
+            color[1],
+            color[1],
+            color[1],
+            color[1],
+            color[1],
+            color[1]
+        ]
+        self.illumination.publish(color_change)
+        rospy.sleep(0.1)
     
     def OppRainbow(self):
          # changing the rgb format into android format to be published in MiRo message
@@ -105,9 +140,16 @@ class IllumPublisher(object):
     # Searching for Song Lights 
     # Genre Specific Lights
     
+    def loop(self):
+        if self.command == "rainbow":
+            illum.blue()
+        if self.command == "blue":
+            illum.rainbow()
+
 illum = IllumPublisher()
 while not rospy.is_shutdown(): #light up 3 different colors 
     #illum.set_illumination(red = 0, green = 200, blue = 200)
     #illum.rainbow()
-    illum.OppRainbow()
+    illum.loop()
+    #illum.OppRainbow()
     #illum.

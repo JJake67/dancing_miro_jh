@@ -18,8 +18,10 @@ class JointPublisher(object):
     def cmd_callback(self,topic_message):
         print(f'Node obtained msg: {topic_message.move_name}')
         print(f'Node also said: {topic_message.mode}')
+        self.command = topic_message.move_name 
     
     def __init__(self):
+        self.command = ""
         self.ctrl_c = False
         rospy.init_node("joint_publisher")
         self.position = None
@@ -260,9 +262,9 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         #print(blink)
 
-        pitch_freq = 3.4
+        pitch_freq = 2
         pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
-        lift_freq = 3.4
+        lift_freq = 2
         lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
         #print(pitch)
         self.kinematic_joint_cmd.position = [0,lift,0,pitch]
@@ -278,10 +280,17 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    def loop(self,t,t0):
+        if self.command == "soul nod":
+            movement.soul_Head_Bounce(t,t0)
+        if self.command == "head bang":
+            movement.head_Banging(t,t0)
+
 movement = JointPublisher()
 t0 = rospy.Time.now().to_sec()
 while not rospy.is_shutdown():
     t = rospy.Time.now().to_sec()
+    movement.loop(t0,t)
     #ovement.blink_m(t,t0)
     #movement.ear_m(t,t0)
     #movement.tail(t,t0)
@@ -289,7 +298,7 @@ while not rospy.is_shutdown():
     #movement.pitch_movement(t, t0)
     #movement.head_Banging(t,t0)
     #movement.the_Robot(t,t0)
-    movement.soul_Head_Bounce(t,t0)
+    #movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
     #movement.cosmetic_pub_test(t,t0)
     rospy.sleep(0.05)

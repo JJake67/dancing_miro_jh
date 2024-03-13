@@ -48,6 +48,7 @@ class BodyMoves(object):
     NODE_EXISTS = False  # Disables (True) / Enables (False) rospy.init_node
 
     def __init__(self):
+        self.command = ""
         self.ctrl_c = False
         """
         Class initialisation
@@ -74,20 +75,19 @@ class BodyMoves(object):
     def cmd_callback(self,topic_message):
         print(f'Node obtained msg: {topic_message.move_name}')
         print(f'Node also said: {topic_message.mode}')
+        self.command = topic_message.move_name
+
     
     ## MAIN FuNCTION THAT MAKES MiRo SPIN 
     #  Function spins him at a set speed of 5 / pi for 3 seconds then stops him 
     def rotate(self):
-        print("MiRO Rotating")
+        #print("MiRO Rotating")
         t0 = rospy.Time.now()
-        while rospy.Time.now() < t0 + self.ACTION_DURATION:
-            self.velocity.twist.linear.x = 0.1
-            self.velocity.twist.angular.z = 5/math.pi
-            self.pub_cmd_vel.publish(self.velocity)
-            rospy.sleep(0.1)
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
+        self.velocity.twist.linear.x = 0.05
+        self.velocity.twist.angular.z = 3/math.pi
         self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.1)
+
     # Raghads VERSION !!!!
     """"def rotate(self):
         t0 = rospy.Time.now()
@@ -185,11 +185,24 @@ class BodyMoves(object):
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
         print("done")
+    
+    def wait(self):
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.5)
+
+    def loop(self):
+        if self.command == "Spin Big":
+            movement.rotate()
+        else:
+            movement.wait()
 
 movement = BodyMoves()
 while not rospy.is_shutdown():
-    rospy.sleep(1)
-    movement.rotate_m2()
+    #rospy.sleep(1)
+    movement.loop()
+    #movement.rotate_m2()
     ##print("ROTATION M2 DONE")
     ##rospy.sleep(1)
     #movement.rotate()
