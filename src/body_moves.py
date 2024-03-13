@@ -88,6 +88,55 @@ class BodyMoves(object):
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.1)
 
+    ## WORKS , USUALLY SOME DELAY BETWEEN PUBLISHIGN AND NEXT COMMAND SO rospy.sleep(0.1) allows publisher to get through
+    ## idk why but it does
+    def rotate_m2(self): 
+        t0 = rospy.Time.now()
+        print("MiRo rotating")
+        self.velocity.twist.angular.z = 2/math.pi 
+        self.velocity.twist.linear.x = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.1)
+        
+        # EVEN IF CTRL C WILL KEEP PRINTING INFO UNTIL DONE 
+        while rospy.Time.now() < (t0 + self.ACTION_DURATION):
+            #print((rospy.Time.now()-t0).to_sec())
+            if (rospy.Time.now() - t0).to_sec() >= 6.0:
+                t0 = rospy.Time.now()
+                self.velocity.twist.angular.z = self.velocity.twist.angular.z * -1
+                self.pub_cmd_vel.publish(self.velocity)
+            self.pub_cmd_vel.publish(self.velocity)
+            rospy.sleep(0.1)
+            #print(self.velocity.twist.angular.z)
+            
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        print("done")
+    
+    def wait(self):
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.5)
+
+    def loop(self):
+        if self.command == "Spin Big":
+            movement.rotate()
+        else:
+            movement.wait()
+
+movement = BodyMoves()
+while not rospy.is_shutdown():
+    movement.loop()
+
+    #rospy.sleep(1)
+    #movement.rotate_m2()
+    ##print("ROTATION M2 DONE")
+    ##rospy.sleep(1)
+    #movement.rotate()
+
+
     # Raghads VERSION !!!!
     """"def rotate(self):
         t0 = rospy.Time.now()
@@ -139,6 +188,7 @@ class BodyMoves(object):
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
     """
+
     ## THIS IS NEVER USED I DONT THINK 
 
     ## It is meant to rotate it in one direction for 5 secs, then rotate back and just repeat this sequence
@@ -160,49 +210,3 @@ class BodyMoves(object):
         self.pub_cmd_vel.publish(self.velocity)
         print("done")
     """
-    ## WORKS , USUALLY SOME DELAY BETWEEN PUBLISHIGN AND NEXT COMMAND SO rospy.sleep(0.1) allows publisher to get through
-    ## idk why but it does
-    def rotate_m2(self): 
-        t0 = rospy.Time.now()
-        print("MiRo rotating")
-        self.velocity.twist.angular.z = 2/math.pi 
-        self.velocity.twist.linear.x = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.1)
-        
-        # EVEN IF CTRL C WILL KEEP PRINTING INFO UNTIL DONE 
-        while rospy.Time.now() < (t0 + self.ACTION_DURATION):
-            #print((rospy.Time.now()-t0).to_sec())
-            if (rospy.Time.now() - t0).to_sec() >= 6.0:
-                t0 = rospy.Time.now()
-                self.velocity.twist.angular.z = self.velocity.twist.angular.z * -1
-                self.pub_cmd_vel.publish(self.velocity)
-            self.pub_cmd_vel.publish(self.velocity)
-            rospy.sleep(0.1)
-            #print(self.velocity.twist.angular.z)
-            
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        print("done")
-    
-    def wait(self):
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.5)
-
-    def loop(self):
-        if self.command == "Spin Big":
-            movement.rotate()
-        else:
-            movement.wait()
-
-movement = BodyMoves()
-while not rospy.is_shutdown():
-    #rospy.sleep(1)
-    movement.loop()
-    #movement.rotate_m2()
-    ##print("ROTATION M2 DONE")
-    ##rospy.sleep(1)
-    #movement.rotate()

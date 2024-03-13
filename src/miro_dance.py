@@ -25,7 +25,7 @@ class MiroDance(object):
         self.bars_array = []
         #self.sections = [] 
         
-        # For Test Purposes 
+        # FOR TESTING
         self.sections = [0,6,12,18,24,30,36,42,48]
 
         # Audio Features 
@@ -167,11 +167,10 @@ class MiroDance(object):
     def loop(self):
         #Get Spotify Data For Song 
         #self.set_track_data()
+
         start_time = rospy.get_time()
-        #print(start_time)
         autoMode = False
         while not rospy.is_shutdown():
-            # Loop through segment array 
             for x in range(0,len(self.sections)):
                 current_time = rospy.get_time()-start_time
                 #print(current_time)

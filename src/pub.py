@@ -304,12 +304,6 @@ while not rospy.is_shutdown():
     rospy.sleep(0.05)
     #movement.blink_sample()
     # 
-    
-    #movement.ear_sample()
-    #movement.tail_sample()
-    #movement.head_sample()
-    #movement.rotate_sample()
-    #movement.set_move_cosmetic2()
 
     #print(np.sin(movement.time_scale*(time.time() - movement.start))) 
 
