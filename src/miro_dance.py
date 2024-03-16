@@ -3,9 +3,11 @@ import rospy
 import os
 import base64
 import json
+import numpy as np
 from dotenv import load_dotenv
 from requests import post, get
 from std_msgs.msg import String
+from std_srvs.srv import SetBool, SetBoolRequest
 from dancing_miro.msg import body, lights, head
 # from msg_place import SetString, SetStringResponse
 class MiroDance(object):
@@ -20,22 +22,31 @@ class MiroDance(object):
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
         
-        self.bars_array = []
-        #self.sections = [] 
+        self.bars = []
+        self.sections = [] 
         
         # FOR TESTING
-        self.sections = [0,6,12,18,24,30,36,42,48]
-        self.tempo = 120
+        #self.sections = [0,6,12,18,24,30,36,42,48]
+        #self.tempo = 120
+        self.song_name = "Smooth Santana"
 
         # Audio Features 
         self.danceability = 0.0
         self.valence = 0.0 
 
         # Required for device to access Spotify API app 
-        #client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
-        #client_secret = "a35830533528441f9ae304893a279b38"
+        self.client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
+        self.client_secret = "a35830533528441f9ae304893a279b38"
         
         #self.set_track_data()
+        # SERVICES
+        service_name = "identify_song"
+
+        rospy.wait_for_service(service_name) 
+        self.service = rospy.ServiceProxy(service_name, SetBool)
+
+        self.request_to_server = SetBoolRequest()
+        self.request_to_server.data = True 
         # SUBSCRIBERS
 
         # PUBLISHERS
@@ -49,9 +60,11 @@ class MiroDance(object):
         topic_name = "light_topic"
         self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
 
-        # localise_now : point_to_sound msg
+        # localise_now : point_to_responsesound msg
         
         rospy.loginfo("Miro_Dance Node is Active...")
+        #rospy.sleep(5)
+        #self.set_track_data()
 
     # SPOTIFY 
     def set_track_data(self):
@@ -88,14 +101,17 @@ class MiroDance(object):
         result = get(url, headers=headers)
         audio_analysis_dict = json.loads(result.content)
         self.duration = audio_analysis_dict["track"]["duration"]
-        self.tempo = audio_analysis_dict["track"]["tempo"]
+        self.tempo = int(audio_analysis_dict["track"]["tempo"])
         self.end_of_fade_in = audio_analysis_dict["track"]["end_of_fade_in"]
 
         # Finds the time the first beat starts so each one after that will be in time
         self.track_start = audio_analysis_dict["beats"][0]["start"]
 
-        self.bars = audio_analysis_dict["bars"]
-        self.sections = audio_analysis_dict["sections"]
+        for x in range(0,len(audio_analysis_dict["bars"])):
+            self.bars.append(audio_analysis_dict["bars"][x]["start"])
+
+        for x in range(0,len(audio_analysis_dict["sections"])):
+            self.sections.append(audio_analysis_dict["sections"][x]["start"])
 
         # Audio Features
         url = f"https://api.spotify.com/v1/audio-features/{track_id}"
@@ -122,7 +138,7 @@ class MiroDance(object):
         return token
     
     # Needed to Access Spotify App
-    def get_auth_headers(token):
+    def get_auth_headers(self,token):
         return {"Authorization": "Bearer " + token}
     
     def publish_body_cmds(self, value):
@@ -164,23 +180,35 @@ class MiroDance(object):
     def loop(self):
         # Identify Song
         #self.song_name = result
+        print("Okay now")
+        #rospy.sleep(5)
+        response_from_server = self.service(self.request_to_server) 
+        print(response_from_server.message)
+        self.song_name = response_from_server.message
         # Retrieve Spotify Data, set object values to that data
-        #self.set_track_data()
-
+        self.set_track_data()
+        print("done)")
+        print(self.sections)
+        print(len(self.sections))
         start_time = rospy.get_time()
         autoMode = False
         while not rospy.is_shutdown():
-            for x in range(0,len(self.sections)):
-                current_time = rospy.get_time()-start_time
-                while current_time < self.sections[x]: 
-
-                    #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
-                    #self.publish_body_cmds(autoMode)
-                    #self.publish_head_cmd(autoMode)
-                    self.publish_lights_cmd(autoMode)
-                    rospy.sleep(0.5)
+            # Calls identify_song service
+            #response_from_server = self.service(self.request_to_server) 
+            if self.song_name != "No":
+                print("okay")
+                for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-start_time
-                autoMode = not autoMode
+                    while current_time < self.sections[x]: 
+
+                        #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
+                        self.publish_body_cmds(autoMode)
+                        self.publish_head_cmd(autoMode)
+                        self.publish_lights_cmd(autoMode)
+                        rospy.sleep(0.5)
+                        current_time = rospy.get_time()-start_time
+                    autoMode = not autoMode
+            rospy.sleep(0.5)
         
 
         
@@ -193,15 +221,15 @@ if __name__ == "__main__":
 
 
 # CODE FOR MAKING this node into SERVICE_CLIENT for identify_song
-#service_name = "identify_song"
-#rospy.init_node(f"{service_name}_client") 
+#        service_name = "identify_song"
+#        rospy.init_node(f"{service_name}_client") 
 
-#rospy.wait_for_service(service_name) 
-#service = rospy.ServiceProxy(service_name, SetString)
+#        rospy.wait_for_service(service_name) 
+#        service = rospy.ServiceProxy(service_name, SetString)
 
-#request_to_server = SetStringResponse() 
-#request_to_server.request_signal = True 
+#        request_to_server = SetStringResponse() 
+#        request_to_server.request_signal = True 
 
-#response_from_server = service(request_to_server) 
+#        response_from_server = service(request_to_server) 
 # SHOULD RETURN THE SONG NAME SO FOR NOW I'LL JUST INSERT ONE
 #print(response_from_server)

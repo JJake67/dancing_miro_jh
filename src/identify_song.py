@@ -1,19 +1,76 @@
+#!/usr/bin/env python3
+
+import rospy
 import os
 import asyncio
+import time
+from std_msgs.msg import String
+from std_srvs.srv import SetBool, SetBoolResponse
 from shazamio import Shazam
 
-print('Get current working directory : ', os.getcwd())
-directory = os.getcwd()
-def main():
-  shazam = Shazam()
-  # Waits until shazam identifies song
-  out = shazam.recognize_song(directory+"\data\white_noise_5secs.mp3")
-  if len(out["matches"]) == 0 :
-    print("soz")
-  else:
-    print(out["track"]["title"])
+class identifySongService():
 
-#loop = asyncio.get_event_loop()
-#loop.run_until_complete(main())
-main = main()
-main.loop()
+  def __init__(self):
+    service_name = "identify_song"
+    rospy.init_node(f"{service_name}_server")
+    self.song_title = ""
+    self.service = rospy.Service(service_name, SetBool, self.srv_callback)
+    
+    rospy.loginfo(f"{service_name} Server is ready to be called")
+
+  def srv_callback(self, request_from_client):
+    directory = os.getcwd()
+    print("plz")
+    response_from_server = SetBoolResponse()
+    print("here?")
+    rospy.sleep(10)
+    if request_from_client.data == True:
+      print("Server received True, will attempt song identification")
+      async def findSong():
+        shazam = Shazam()
+        # Waits until shazam identifies song
+        out = await shazam.recognize_song(directory+"/data/smooth_5secs.mp3")
+        if len(out["matches"]) == 0 :
+          self.song_title = "No"
+        else:
+          self.song_title = out["track"]["title"]
+      print("ye")
+      loop = asyncio.new_event_loop()
+      print("yeee")
+      loop.run_until_complete(findSong())
+      print("yeeeeee")
+      response_from_server.success = True
+      response_from_server.message = self.song_title
+    else:
+      response_from_server.success = False
+      response_from_server.message = "No Request"
+    return response_from_server
+
+  def main(self):
+    rospy.spin()
+
+if __name__ == '__main__':
+  server = identifySongService()
+  server.main()
+
+
+
+
+"""
+  print('Get current working directory : ', os.getcwd())
+  directory = os.getcwd()
+  async def main():
+    shazam = Shazam()
+    # Waits until shazam identifies song
+    out = await shazam.recognize_song(directory+"/data/miro_audio.mp3")
+    if len(out["matches"]) == 0 :
+      print("soz")
+    else:
+      print(out["track"]["title"])
+
+  print("She searchinnn")
+  loop = asyncio.get_event_loop()
+  loop.run_until_complete(main())
+  #main = main()
+  #main.loop()
+"""

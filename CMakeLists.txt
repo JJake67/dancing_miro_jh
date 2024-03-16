@@ -10,6 +10,7 @@ project(dancing_miro)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  std_srvs
   message_generation
 )
 
@@ -55,11 +56,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  SetBool.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

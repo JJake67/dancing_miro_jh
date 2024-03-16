@@ -28,8 +28,8 @@ BUFFER_MARGIN = 1000
 BUFFER_MAX = BUFFER_STUFF_SAMPLES + BUFFER_MARGIN
 BUFFER_MIN = BUFFER_STUFF_SAMPLES - BUFFER_MARGIN
 
-RECORD_TIME = 5
-MIC_SAMPLE_RATE = 20000
+RECORD_TIME = 10
+MIC_SAMPLE_RATE = 40000
 SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
 
 
@@ -79,6 +79,7 @@ class listen_and_record():
         self.thresh = 0
         self.thresh_min = 0.03
 
+        self.input_mics = np.zeros((self.x_len, self.no_of_mics))
         # RECORDING INITIALISATIONS >>>>>>>
 
         # Create robot interface
@@ -228,7 +229,6 @@ class listen_and_record():
     def loop(self):
 
         # This switch loops through MiRo behaviours:
-        # Listen to sound, turn to the sound source
         self.status_code = 0
         rospy.sleep(0.5)
         while not rospy.core.is_shutdown():
@@ -245,9 +245,11 @@ class listen_and_record():
                 print("Loud Signal Detected")
                 print("Recording...")
                 self.record_audio()
+                #rospy.sleep(5)
                 
                 #clear the data collected when miro is turning
                 self.audio_event=[]
+                self.status_code = 1
 
             # Fall back
             else:
