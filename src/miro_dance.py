@@ -195,7 +195,6 @@ class MiroDance(object):
         while self.song_name == "":
             response_listen_and_record = self.service_record(self.request_to_record)
             print("Plug in phone now")
-            rospy.sleep(10)
             response_song_identification = self.service_identify(self.request_to_identify) 
             print(response_song_identification.message)
             self.song_name = response_song_identification.message

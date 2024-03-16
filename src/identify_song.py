@@ -23,7 +23,7 @@ class identifySongService():
     print(directory)
     print("plz")
     response_from_server = SetBoolResponse()
-    print("here?")
+    print("plug phone")
     #self.listenForSongPub.publish(True)
     rospy.sleep(10)
     if request_from_client.data == True:

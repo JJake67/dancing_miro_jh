@@ -174,23 +174,24 @@ class listen_and_record():
     ## RECORDING THE AUDIO FUNCTIONS ---------------------------------------------------------------
 
     def callback_record_mics(self, msg):
-        # if recording
-        if not self.micbuf is None:
+        if self.start_listening == True:
+            # if recording
+            if not self.micbuf is None:
 
-            # append mic data to store
-            self.micbuf = np.concatenate((self.micbuf, msg.data))
+                # append mic data to store
+                self.micbuf = np.concatenate((self.micbuf, msg.data))
 
-            # report
-            sys.stdout.write(".")
-            sys.stdout.flush()
+                # report
+                sys.stdout.write(".")
+                sys.stdout.flush()
 
-            # finished recording?
-            if self.micbuf.shape[0] >= SAMPLE_COUNT:
+                # finished recording?
+                if self.micbuf.shape[0] >= SAMPLE_COUNT:
 
-                # end recording
-                self.outbuf = self.micbuf
-                self.micbuf = None
-                print ("Recording Ended")
+                    # end recording
+                    self.outbuf = self.micbuf
+                    self.micbuf = None
+                    print ("Recording Ended")
 
     def callback_stream(self, msg):
         self.buffer_space = msg.data[0]
@@ -236,8 +237,8 @@ class listen_and_record():
         # This switch loops through MiRo behaviours:
         self.status_code = 0
         while request_from_client.data == True:
+            self.micbuf = np.zeros((1, 4), 'uint16')
             self.start_listening = True
-            self.micbuf = [np.zeros((0, 4), 'uint16')]
             # Step 1. sound event detection
             if self.status_code == 1:
                 # Every once in a while, look for ball
@@ -257,6 +258,10 @@ class listen_and_record():
                 self.status_code = 1
                 response_from_server.success = True
                 response_from_server.message = "Yay"
+
+                # Resets these two so that the service can be called again
+                self.micbuf = None
+                self.outbuf = None
                 return response_from_server
 
             # Fall back
@@ -272,6 +277,11 @@ if __name__ == "__main__":
     main = listen_and_record()
     #plt.show() # to stop signal display next run: comment this line and line 89(self.ani...)
     main.loop()
+
+
+
+
+
 
 
 """
