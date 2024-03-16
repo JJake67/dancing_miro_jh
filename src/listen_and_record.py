@@ -9,7 +9,8 @@ import numpy as np
 import rospy
 import miro2 as miro
 from node_detect_audio_engine import DetectAudioEngine
-from std_msgs.msg import Int16MultiArray,UInt16MultiArray
+from std_msgs.msg import Int16MultiArray,UInt16MultiArray, Bool
+from std_srvs.srv import SetBool, SetBoolResponse
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -28,8 +29,8 @@ BUFFER_MARGIN = 1000
 BUFFER_MAX = BUFFER_STUFF_SAMPLES + BUFFER_MARGIN
 BUFFER_MIN = BUFFER_STUFF_SAMPLES - BUFFER_MARGIN
 
-RECORD_TIME = 10
-MIC_SAMPLE_RATE = 40000
+RECORD_TIME = 5
+MIC_SAMPLE_RATE = 20000
 SAMPLE_COUNT = RECORD_TIME * MIC_SAMPLE_RATE
 
 
@@ -45,11 +46,14 @@ class listen_and_record():
 
         # which miro
         topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
-       
-        # subscribers
+
+        # Service Node Setup 
+        service_name = "listen_and_record_music"
+        self.service = rospy.Service(service_name, SetBool, self.srv_callback)
         # save previous head data
         self.tmp = []
-
+        self.directory = os.getcwd()
+        self.start_listening = False
         #Subscriber Node
         self.sub_mics = rospy.Subscriber(topic_base_name + "/sensors/mics",
             Int16MultiArray, self.callback_identify_mics, queue_size=1, tcp_nodelay=True)
@@ -78,71 +82,73 @@ class listen_and_record():
         # dynamic threshold
         self.thresh = 0
         self.thresh_min = 0.03
-
+        self.listen = False
         self.input_mics = np.zeros((self.x_len, self.no_of_mics))
         # RECORDING INITIALISATIONS >>>>>>>
 
         # Create robot interface
         self.interface = miro.lib.RobotInterface(node_name=None)
 
-        self.micbuf = np.zeros((0, 4), 'uint16')
+        #self.micbuf = [np.zeros((0, 4), 'uint16')]
+        self.micbuf = None
         self.outbuf = None
         self.buffer_stuff = 0
         self.playchan = 0
         self.playsamp = 0
 
+        full_path = os.path.realpath(__file__)
+        path, filename = os.path.split(full_path)
+        self.directory = path
         #subscribers
         topic = topic_base_name + "/sensors/stream"
-        print ("subscribe", topic)
+        #print ("subscribe", topic)
         self.sub_stream = rospy.Subscriber(topic, UInt16MultiArray, self.callback_stream, queue_size=1, tcp_nodelay=True)
        
         self.interface.register_callback("microphones", self.callback_record_mics)
 
         #publishers
         topic = topic_base_name + "/control/stream"
-        print ("publish", topic)
+        #print ("publish", topic)
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
-        
-    ## IDENTIFYING LOUD SIGNAL FUNCTIONS ----------------------------------------------------------
-
+        print("Listen and Record Service Node now active ...")
+           
     def callback_identify_mics(self, data):
-        import time
+        if self.start_listening == True:
+            # data for angular calculation
+            self.audio_event = AudioEng.process_data(data.data)
 
-        # data for angular calculation
-        self.audio_event = AudioEng.process_data(data.data)
+            now = rospy.Time.now()
+            zero_time = rospy.Time()
 
-        now = rospy.Time.now()
-        zero_time = rospy.Time()
+            #print ('Fields are', now.secs, now.nsecs)
 
-        #print ('Fields are', now.secs, now.nsecs)
+            # Time arithmetic
+            five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
 
-        # Time arithmetic
-        five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
+            # NOTE: in general, you will want to avoid using time.time() in ROS code
+            py_time = rospy.Time.from_sec(time.time())
+            # 1.2 1.7 2.2  -> predict -> start in sync
 
-        # NOTE: in general, you will want to avoid using time.time() in ROS code
-        py_time = rospy.Time.from_sec(time.time())
-        # 1.2 1.7 2.2  -> predict -> start in sync
+            # data for dynamic thresholding
+            data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
+            data_t = data_t.reshape((4, 500))    
+            self.head_data = data_t[2][:]
+            if self.tmp is None:
+                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+            elif (len(self.tmp)<10500):
+                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+            else:
+                # when the buffer is full
+                self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
+                # dynamic threshold is calculated and updated when new signal come
+                self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
 
-        # data for dynamic thresholding
-        data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
-        data_t = data_t.reshape((4, 500))    
-        self.head_data = data_t[2][:]
-        if self.tmp is None:
-            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-        elif (len(self.tmp)<10500):
-            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-        else:
-            # when the buffer is full
-            self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
-            # dynamic threshold is calculated and updated when new signal come
-            self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
-
-        # data for display
-        data = np.asarray(data.data)
-        # 500 samples from each mics
-        data = np.transpose(data.reshape((self.no_of_mics, 500)))
-        data = np.flipud(data)
-        self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
+            # data for display
+            data = np.asarray(data.data)
+            # 500 samples from each mics
+            data = np.transpose(data.reshape((self.no_of_mics, 500)))
+            data = np.flipud(data)
+            self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
   
     def voice_accident(self):
         m = 0.00
@@ -168,27 +174,25 @@ class listen_and_record():
     ## RECORDING THE AUDIO FUNCTIONS ---------------------------------------------------------------
 
     def callback_record_mics(self, msg):
+        # if recording
+        if not self.micbuf is None:
 
-            # if recording
-            if not self.micbuf is None:
+            # append mic data to store
+            self.micbuf = np.concatenate((self.micbuf, msg.data))
 
-                # append mic data to store
-                self.micbuf = np.concatenate((self.micbuf, msg.data))
+            # report
+            sys.stdout.write(".")
+            sys.stdout.flush()
 
-                # report
-                sys.stdout.write(".")
-                sys.stdout.flush()
+            # finished recording?
+            if self.micbuf.shape[0] >= SAMPLE_COUNT:
 
-                # finished recording?
-                if self.micbuf.shape[0] >= SAMPLE_COUNT:
-
-                    # end recording
-                    self.outbuf = self.micbuf
-                    self.micbuf = None
-                    print (" OK!")
+                # end recording
+                self.outbuf = self.micbuf
+                self.micbuf = None
+                print ("Recording Ended")
 
     def callback_stream(self, msg):
-
         self.buffer_space = msg.data[0]
         self.buffer_total = msg.data[1]
         self.buffer_stuff = self.buffer_total - self.buffer_space
@@ -205,8 +209,7 @@ class listen_and_record():
             time.sleep(0.02)
         
         # define output file 
-        directory = os.getcwd()
-        outfilename = directory + '/data/miro_audio.wav'
+        outfilename = self.directory + '/data/miro_audio.wav'
         file = wave.open(outfilename, 'w')    
 
         file.setsampwidth(2)
@@ -223,42 +226,84 @@ class listen_and_record():
         #Converts to mp3
         print ("wrote output file at", outfilename)
         sound = pydub.AudioSegment.from_wav(outfilename)
-        mp3_output = directory + '/data/miro_audio.mp3'
+        mp3_output = self.directory + '/data/miro_audio.mp3'
         sound.export(mp3_output,format="mp3")
 
-    def loop(self):
-
+    def srv_callback(self,request_from_client):
+        # HOW TO GET PATH WHEN os.getcwd DOESNT WORK
+        response_from_server = SetBoolResponse()
+        print("yes")
         # This switch loops through MiRo behaviours:
         self.status_code = 0
-        rospy.sleep(0.5)
-        while not rospy.core.is_shutdown():
-            
-            
+        while request_from_client.data == True:
+            self.start_listening = True
+            self.micbuf = [np.zeros((0, 4), 'uint16')]
             # Step 1. sound event detection
             if self.status_code == 1:
                 # Every once in a while, look for ball
-               self.voice_accident()
+                self.voice_accident()
 
             # Step 2. Orient towards it
             elif self.status_code == 2:
+                self.start_listening == True
                 ## Print that a sound has been detected
                 print("Loud Signal Detected")
                 print("Recording...")
                 self.record_audio()
                 #rospy.sleep(5)
-                
+                print("here?")
                 #clear the data collected when miro is turning
                 self.audio_event=[]
                 self.status_code = 1
+                response_from_server.success = True
+                response_from_server.message = "Yay"
+                return response_from_server
 
             # Fall back
             else:
                 self.status_code = 1
+    
+    def loop(self):
+        rospy.spin()
 
 if __name__ == "__main__":
-
     rospy.init_node("listen_and_record", anonymous=True)
     AudioEng = DetectAudioEngine()
     main = listen_and_record()
     #plt.show() # to stop signal display next run: comment this line and line 89(self.ani...)
     main.loop()
+
+
+"""
+         # HOW TO GET PATH WHEN os.getcwd DOESNT WORK
+        full_path = os.path.realpath(__file__)
+        path, filename = os.path.split(full_path)
+
+def loop(self):
+
+        # This switch loops through MiRo behaviours:
+        self.status_code = 0
+        rospy.sleep(0.5)
+        while not rospy.core.is_shutdown():
+            if self.listen == True:
+                # Step 1. sound event detection
+                if self.status_code == 1:
+                    # Every once in a while, look for ball
+                    self.voice_accident()
+
+                # Step 2. Orient towards it
+                elif self.status_code == 2:
+                    ## Print that a sound has been detected
+                    print("Loud Signal Detected")
+                    print("Recording...")
+                    self.record_audio()
+                    #rospy.sleep(5)
+                    
+                    #clear the data collected when miro is turning
+                    self.audio_event=[]
+                    self.status_code = 1
+
+                # Fall back
+                else:
+                    self.status_code = 1
+"""

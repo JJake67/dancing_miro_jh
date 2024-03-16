@@ -311,7 +311,7 @@ movement = JointPublisher()
 t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time()
-    #movement.loop(t0,t)
+    movement.loop(t0,t)
     #ovement.blink_m(t,t0)
     #movement.ear_m(t,t0)
     #movement.tail(t,t0)
@@ -322,7 +322,7 @@ while not rospy.is_shutdown():
     #movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
     #movement.cosmetic_pub_test(t,t0)
-    movement.head_bop(t,t0)
+    #movement.head_bop(t,t0)
     rospy.sleep(0.02)
     #movement.blink_sample()
     # 

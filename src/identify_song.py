@@ -4,7 +4,7 @@ import rospy
 import os
 import asyncio
 import time
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, SetBoolResponse
 from shazamio import Shazam
 
@@ -20,18 +20,20 @@ class identifySongService():
 
   def srv_callback(self, request_from_client):
     directory = os.getcwd()
+    print(directory)
     print("plz")
     response_from_server = SetBoolResponse()
     print("here?")
+    #self.listenForSongPub.publish(True)
     rospy.sleep(10)
     if request_from_client.data == True:
       print("Server received True, will attempt song identification")
       async def findSong():
         shazam = Shazam()
         # Waits until shazam identifies song
-        out = await shazam.recognize_song(directory+"/data/smooth_5secs.mp3")
+        out = await shazam.recognize_song(directory+"/data/miro_audio.mp3")
         if len(out["matches"]) == 0 :
-          self.song_title = "No"
+          self.song_title = ""
         else:
           self.song_title = out["track"]["title"]
       print("ye")
@@ -44,6 +46,7 @@ class identifySongService():
     else:
       response_from_server.success = False
       response_from_server.message = "No Request"
+    #self.listenForSongPub.publish(False)
     return response_from_server
 
   def main(self):
@@ -73,4 +76,6 @@ if __name__ == '__main__':
   loop.run_until_complete(main())
   #main = main()
   #main.loop()
+
+      #self.listenForSongPub = rospy.Publisher("record_topic",Bool,queue_size=10)
 """

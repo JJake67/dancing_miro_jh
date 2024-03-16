@@ -28,7 +28,7 @@ class MiroDance(object):
         # FOR TESTING
         #self.sections = [0,6,12,18,24,30,36,42,48]
         #self.tempo = 120
-        self.song_name = "Smooth Santana"
+        self.song_name = ""
 
         # Audio Features 
         self.danceability = 0.0
@@ -43,10 +43,20 @@ class MiroDance(object):
         service_name = "identify_song"
 
         rospy.wait_for_service(service_name) 
-        self.service = rospy.ServiceProxy(service_name, SetBool)
+        self.service_identify = rospy.ServiceProxy(service_name, SetBool)
 
-        self.request_to_server = SetBoolRequest()
-        self.request_to_server.data = True 
+        self.request_to_identify = SetBoolRequest()
+        self.request_to_identify.data = True 
+
+        service_name = "listen_and_record_music"
+
+        rospy.wait_for_service(service_name)
+        self.service_record = rospy.ServiceProxy(service_name,SetBool)
+        
+        self.request_to_record = SetBoolRequest()
+        self.request_to_record.data = True
+
+
         # SUBSCRIBERS
 
         # PUBLISHERS
@@ -179,15 +189,21 @@ class MiroDance(object):
     # MAIN PROGRAM LOOP 
     def loop(self):
         # Identify Song
-        #self.song_name = result
-        print("Okay now")
-        #rospy.sleep(5)
-        response_from_server = self.service(self.request_to_server) 
-        print(response_from_server.message)
-        self.song_name = response_from_server.message
+        print("Play Music Now")
+        
+
+        while self.song_name == "":
+            response_listen_and_record = self.service_record(self.request_to_record)
+            print("Plug in phone now")
+            rospy.sleep(10)
+            response_song_identification = self.service_identify(self.request_to_identify) 
+            print(response_song_identification.message)
+            self.song_name = response_song_identification.message
+            print("song_name" + self.song_name)
         # Retrieve Spotify Data, set object values to that data
         self.set_track_data()
-        print("done)")
+        print(self.song_name)
+        print("WE MADE IT!!!!!!")
         print(self.sections)
         print(len(self.sections))
         start_time = rospy.get_time()
@@ -202,9 +218,9 @@ class MiroDance(object):
                     while current_time < self.sections[x]: 
 
                         #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
-                        self.publish_body_cmds(autoMode)
-                        self.publish_head_cmd(autoMode)
-                        self.publish_lights_cmd(autoMode)
+                        #self.publish_body_cmds(autoMode)
+                        #self.publish_head_cmd(autoMode)
+                        #self.publish_lights_cmd(autoMode)
                         rospy.sleep(0.5)
                         current_time = rospy.get_time()-start_time
                     autoMode = not autoMode
