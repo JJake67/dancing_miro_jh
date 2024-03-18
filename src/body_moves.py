@@ -42,84 +42,52 @@ class BodyMoves(object):
 
     # Script settings below
     TICK = 0.02  # Main loop frequency (in secs, default is 50Hz)
-    ACTION_DURATION = rospy.Duration(16.0)  # seconds
-    VERBOSE = True  # Whether to print out values of Q and N after each iteration
-    ##NOTE The following option is relevant in MiRoCODE
-    NODE_EXISTS = False  # Disables (True) / Enables (False) rospy.init_node
+    #ACTION_DURATION = rospy.Duration(16.0)  # seconds
 
     def __init__(self):
         self.command = ""
-        self.ctrl_c = False
-        """
-        Class initialisation
-        """
-        print("Initialising the controller...")
+        self.moveLength = 0.0
 
         # Get robot name
         topic_root = "/" + os.getenv("MIRO_ROBOT_NAME")
 
         # Initialise a new ROS node to communicate with MiRo
-        if not self.NODE_EXISTS:
-            rospy.init_node("body_moves", anonymous=True)
+        rospy.init_node("body_moves", anonymous=True)
 
-        # Define ROS publishers
+        # Define Publishers and Subscribers
         self.pub_cmd_vel = rospy.Publisher(
             topic_root + "/control/cmd_vel", TwistStamped, queue_size=0
         )
-        #self.rotate = TwistStamped()
         self.velocity = TwistStamped()
 
         self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
         rospy.loginfo("Body Move node is active...")
 
+    # Callback for when parameters are passed from Miro_Dance Node 
     def cmd_callback(self,topic_message):
         print(f'Node obtained msg: {topic_message.move_name}')
         print(f'Node also said: {topic_message.mode}')
+        #self.moveLength = topic_message.length
         self.command = topic_message.move_name
 
-    
-    ## MAIN FuNCTION THAT MAKES MiRo SPIN 
-    #  Function spins him at a set speed of 5 / pi for 3 seconds then stops him 
-    def rotate(self):
-        #print("MiRO Rotating")
+    def full_spin(self,spin_length):
         t0 = rospy.Time.now()
-        self.velocity.twist.linear.x = 0.05
-        self.velocity.twist.angular.z = 3/math.pi
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.1)
-
-    ## WORKS , USUALLY SOME DELAY BETWEEN PUBLISHIGN AND NEXT COMMAND SO rospy.sleep(0.1) allows publisher to get through
-    ## idk why but it does
-    def rotate_m2(self): 
-        t0 = rospy.Time.now()
-        print("MiRo rotating")
-        self.velocity.twist.angular.z = 2/math.pi 
-        self.velocity.twist.linear.x = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.1)
         
-        # EVEN IF CTRL C WILL KEEP PRINTING INFO UNTIL DONE 
-        while rospy.Time.now() < (t0 + self.ACTION_DURATION):
-            #print((rospy.Time.now()-t0).to_sec())
-            if (rospy.Time.now() - t0).to_sec() >= 6.0:
-                t0 = rospy.Time.now()
-                self.velocity.twist.angular.z = self.velocity.twist.angular.z * -1
-                self.pub_cmd_vel.publish(self.velocity)
-            self.pub_cmd_vel.publish(self.velocity)
-            rospy.sleep(0.1)
-            #print(self.velocity.twist.angular.z)
-            
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        print("done")
-    
-    def wait(self):
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.5)
+        # MIGHT NEED TO RECHECK MATH 
+        circle_d = 0.3  # meters
+        # Round to 2 DP 
+        lin_speed = (circle_d * math.pi)/spin_length
 
+        while rospy.Time.now() < t0 + spin_length:
+            # Set linear and angular velocities for spin
+            self.velocity.twist.linear.x = lin_speed        # m/s
+            self.velocity.twist.angular.z = 5/math.pi
+
+        # Stops MiRo when spin is done 
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0 
+        self.pub_cmd_vel.publish(self.velocity)
+                                                                                                   
     def loop(self):
         if self.command == "Spin Big":
             movement.rotate()
@@ -129,13 +97,6 @@ class BodyMoves(object):
 movement = BodyMoves()
 while not rospy.is_shutdown():
     movement.loop()
-
-    #rospy.sleep(1)
-    #movement.rotate_m2()
-    ##print("ROTATION M2 DONE")
-    ##rospy.sleep(1)
-    #movement.rotate()
-
 
     # Raghads VERSION !!!!
     """"def rotate(self):
@@ -187,6 +148,49 @@ while not rospy.is_shutdown():
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
+
+        ## MAIN FuNCTION THAT MAKES MiRo SPIN 
+    #  Function spins him at a set speed of 5 / pi for 3 seconds then stops him 
+    def rotate(self):
+        #print("MiRO Rotating")
+        t0 = rospy.Time.now()
+        self.velocity.twist.linear.x = 0.05
+        self.velocity.twist.angular.z = 3/math.pi
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.1)
+
+    ## WORKS , USUALLY SOME DELAY BETWEEN PUBLISHIGN AND NEXT COMMAND SO rospy.sleep(0.1) allows publisher to get through
+    ## idk why but it does
+    def rotate_m2(self): 
+        t0 = rospy.Time.now()
+        print("MiRo rotating")
+        self.velocity.twist.angular.z = 2/math.pi 
+        self.velocity.twist.linear.x = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.1)
+        
+        # EVEN IF CTRL C WILL KEEP PRINTING INFO UNTIL DONE 
+        while rospy.Time.now() < (t0 + self.ACTION_DURATION):
+            #print((rospy.Time.now()-t0).to_sec())
+            if (rospy.Time.now() - t0).to_sec() >= 6.0:
+                t0 = rospy.Time.now()
+                self.velocity.twist.angular.z = self.velocity.twist.angular.z * -1
+                self.pub_cmd_vel.publish(self.velocity)
+            self.pub_cmd_vel.publish(self.velocity)
+            rospy.sleep(0.1)
+            #print(self.velocity.twist.angular.z)
+            
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        print("done")
+    
+    def wait(self):
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.5)
+
     """
 
     ## THIS IS NEVER USED I DONT THINK 

@@ -10,18 +10,6 @@ from dancing_miro.msg import head
 
 class JointPublisher(object):
     
-    """
-        The following code will move the joints, cosmetic and kinematic
-
-    """
-    
-    def cmd_callback(self,topic_message):
-        print(f'Node obtained msg: {topic_message.move_name}')
-        print(f'Node also said: {topic_message.mode}')
-        #print(topic_message.tempo)
-        self.command = topic_message.move_name 
-        self.tempo = 60 / topic_message.tempo
-    
     def __init__(self):
         self.tempo = 0.5
         self.command = ""
@@ -48,6 +36,13 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd = Float32MultiArray()   
         self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]
 
+    def cmd_callback(self,topic_message):
+        print(f'Node obtained msg: {topic_message.move_name}')
+        print(f'Node also said: {topic_message.mode}')
+        #print(topic_message.tempo)
+        self.command = topic_message.move_name 
+        self.tempo = 60 / topic_message.tempo
+        
     # movement for either tilt, lift, yaw or pitch
     def set_move_kinematic(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
         self.kinematic_joint_cmd.position = [tilt, lift, yaw, pitch]
@@ -194,8 +189,8 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,tail,0,0,0,0]
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
-    # Cosmetic_joint_cmd.data : [?, tail, eye, eye, ear, ear]
-    # Kinematic_joint_cmd.data : [tilt, life, yaw, pitch]
+    # Cosmetic_joint_cmd.data : [tail (up/down), tail (left/right), eye, eye, ear, ear]
+    # Kinematic_joint_cmd.data : [tilt, lift, yaw, pitch]
     # Lift = Neck
     # Tilt = Head Tilt ( THOUGH SEEMS TO BE NOT REAL)
     # Yaw = Head Facing Left / Right  * LESS JERKY WHEN FASTER IDK WHY 
