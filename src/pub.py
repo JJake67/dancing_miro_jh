@@ -14,7 +14,17 @@ class JointPublisher(object):
         rospy.init_node("joint_publisher")
         self.topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
 
-        self.tempo = 0.0
+        # Define Joint parameters for easier publishing together
+        self.ear = 0.0
+        self.eye = 0.0 
+        self.tail = 0.0
+
+        self.head_tilt = 0.0
+        self.head_yaw = 0.0
+        self.head_pitch = 0.0
+        self.neck_lift = 0.0
+
+        self.tempo = 2
         self.command = ""
 
         self.start = rospy.Time.now().to_sec()
@@ -32,11 +42,6 @@ class JointPublisher(object):
         
         
         rospy.loginfo("Head/Neck Moves node is active...")
-
-        # UNSURE OF YOUR RELEVANCE, ONLY USED IN SAMPLES 
-        self.time_scale = 0.1#for how fast the movement is 
-        self.blink_freq = 0.5 #for how fast the movement is 
-        self.ear_freq = 1 #for how fast the movement is 
 
         # Defining joint commands
         self.kinematic_joint_cmd = JointState()
@@ -77,9 +82,47 @@ class JointPublisher(object):
     def sine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
 
+    def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
+        return ((mx-mn)) * (np.sin(freq*(t-t0) + phase) / 2) + (mx - ((mx-mn)/2)) 
+
     def cosine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.cos (freq*(t-t0) + phase) / 2.0 + offset)
 
+    # Ears limits are mx = 1, mn = 0
+    # Calibration point = 0.33
+    def move_ears(self,t,t0,freq):
+        self.ear = self.new_sine_generator(1,0,freq,0,t,t0)
+    
+    # Eye limits are mx = 1, mn = 0 
+    # Calibration point = 0.5
+    def move_eyes(self,t,t0,freq):
+        self.eye = self.new_sine_generator(1,0,freq,0,t,t0)
+
+    def wag_tail(self,t,t0,freq):
+        self.tail = self.new_sine_generator(0.5,0.2,freq,0,t,t0)
+
+    def move_head_yaw(self,t,t0,freq):
+        self.head_yaw = self.new_sine_generator(15,-15,freq,0,t,t0)
+
+    def move_head_pitch(self,t,t0,freq):
+        self.head_pitch = self.new_sine_generator(8,-22,freq,0,t,t0)
+
+    def move_neck(self,t,t0,freq):
+        self.neck_lift = self.new_sine_generator(8,-22,freq,0,t,t0)
+
+    # Cosmetic Publisher controls the tail, eyes and ears
+    def publish_cosmetics(self):
+        self.cosmetic_joint_cmd = Float32MultiArray()
+        self.cosmetic_joint_cmd.data= [0,self.tail,self.eye,self.eye,self.ear,self.ear]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
+
+    def publish_kinematics(self):
+        self.kinematic_joint_cmd = JointState()
+
+        self.kinematic_joint_cmd.position = [0,self.neck_lift,self.head_yaw,self.head_pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
+        
     # SPECIFIC DANCE MOVES ------------------------------
     # VER 1 : Moves just look janky unintentionally 
     def the_Robot(self,t,t0):
@@ -170,22 +213,50 @@ class JointPublisher(object):
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
     def loop(self,t,t0):
-        if self.command == "soul nod":
-            movement.soul_Head_Bounce(t,t0)
-        if self.command == "head bang":
-            movement.head_Banging(t,t0)
+        self.wag_tail(t,t0,5)
+        self.move_ears(t,t0,3)
+        self.move_eyes(t,t0,2)
+        self.move_head_yaw(t,t0,1)
+        self.move_head_pitch(t,t0,3)
+        self.move_neck(t,t0,2)
+        if self.tempo != 0.0:
+            self.wag_tail(t,t0,self.tempo)
+            self.move_ears(t,t0,self.tempo)
+            self.move_eyes(t,t0,self.tempo*4)
+            self.move_head_yaw(t,t0,self.tempo*2)
+            self.move_head_pitch(t,t0,self.tempo)
+            self.move_neck(t,t0,self.tempo*0.5)
+        self.publish_cosmetics()
+        self.publish_kinematics()
+
 
 movement = JointPublisher()
 t0 = rospy.get_time()
 while not rospy.is_shutdown():
-    t = rospy.get_time()
+    t = rospy.get_time() 
+    movement.loop(t,t0)
+    #movement.wag_tail(t,t0,5)
+    #movement.move_ears(t,t0,2)
+    #movement.move_eyes(t,t0,3)
+    #movement.move_head_yaw(t,t0,1)
+    #movement.move_head_pitch(t,t0,3)
+    #movement.move_neck(t,t0,2)
+    #if movement.tempo != 0.0:
+    #    movement.wag_tail(t,t0,tempo)
+    #    movement.move_ears(t,t0,tempo)
+    #    movement.move_eyes(t,t0,tempo)
+    #    movement.move_head_yaw(t,t0,tempo)
+    #    movement.move_head_pitch(t,t0,tempo)
+    #    movement.move_neck(t,t0,tempo)  
+    #movement.publish_cosmetics()
+    #movement.publish_kinematics()
     #movement.head_Banging(t,t0)
     #movement.the_Robot(t,t0)
     #movement.soul_Head_Bounce(t,t0)
     #movement.yaw_and_pitch(t,t0)
     #movement.cosmetic_pub_test(t,t0)
     #movement.head_bop(t,t0)
-    rospy.sleep(3)
+    rospy.sleep(0.1)
 
 
 """
@@ -229,6 +300,9 @@ mdk/share/python/miro2/constants.py
     # THIS WAS IN while not rospy.isSHutdown() idk what it does
     #print(np.sin(movement.time_scale*(time.time() - movement.start))) 
 
+        self.time_scale = 0.1#for how fast the movement is 
+        self.blink_freq = 0.5 #for how fast the movement is 
+        self.ear_freq = 1 #for how fast the movement is 
 
     # Rotates Head Side to Side 
     # Yaw Freq determines how quickly he swaps directions NOT his speed 
