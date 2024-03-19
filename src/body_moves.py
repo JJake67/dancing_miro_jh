@@ -45,7 +45,7 @@ class BodyMoves(object):
     #ACTION_DURATION = rospy.Duration(16.0)  # seconds
 
     def __init__(self):
-        self.command = ""
+        self.command = "full_spin"
         self.moveLength = 0.0
 
         # Get robot name
@@ -56,7 +56,7 @@ class BodyMoves(object):
 
         # Define Publishers and Subscribers
         self.pub_cmd_vel = rospy.Publisher(
-            topic_root + "/control/cmd_vel", TwistStamped, queue_size=0
+            topic_root + "/control/cmd_vel", TwistStamped, queue_size=10
         )
         self.velocity = TwistStamped()
 
@@ -70,33 +70,102 @@ class BodyMoves(object):
         #self.moveLength = topic_message.length
         self.command = topic_message.move_name
 
-    def full_spin(self,spin_length):
-        t0 = rospy.Time.now()
-        
-        # MIGHT NEED TO RECHECK MATH 
-        circle_d = 0.3  # meters
-        # Round to 2 DP 
-        lin_speed = (circle_d * math.pi)/spin_length
 
-        while rospy.Time.now() < t0 + spin_length:
-            # Set linear and angular velocities for spin
-            self.velocity.twist.linear.x = lin_speed        # m/s
+    def rotate(self):
+        #print("MiRO Rotating")
+        t0 = rospy.Time.now()
+        self.velocity.twist.linear.x = 0.05
+        self.velocity.twist.angular.z = 3/math.pi
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.1)
+
+    def rotate_m(self,spin_length):
+        t0 = rospy.Time.now().to_sec()
+        tFinal = t0 + spin_length
+        print("MiRo rotating") 
+        while rospy.Time.now().to_sec() < tFinal:
+            self.velocity.twist.linear.x = 0
             self.velocity.twist.angular.z = 5/math.pi
+            self.pub_cmd_vel.publish(self.velocity)
+            #check if 5 seconds have passed
+            if rospy.Time().now().to_sec() - t0 >= 5:
+                #reset the timer
+                t0 = rospy.Time.now().to_sec()
+                #reverse the direction of rotation
+                self.velocity.twist.angular.z = -5/math.pi
+                self.pub_cmd_vel.publish(self.velocity)
+        #stop the rotation
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+
+
+    # Not dead on, need to ask Alex about that 
+    def full_spin(self,spin_length):
+        t0 = rospy.Time.now().to_sec()
+        tFinal = t0 + spin_length
+        
+        # Closest to accurate 
+        ang_vel = (4 / spin_length) * (math.pi)
+
+        self.velocity.twist.linear.x = 0    # m/s
+
+        while t0 < tFinal:
+            # Set linear and angular velocities for spin
+            self.velocity.twist.angular.z = ang_vel
+            self.pub_cmd_vel.publish(self.velocity)
+            rospy.sleep(0.02)
+            t0 = rospy.Time.now().to_sec()
 
         # Stops MiRo when spin is done 
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0 
+        rospy.sleep(0.02)
+        self.velocity.twist.angular.z = ang_vel
         self.pub_cmd_vel.publish(self.velocity)
-                                                                                                   
+        rospy.sleep(5)
+
+    # RIGHT NOW ACTS LIKE MORE OF A WINDING PATH
+    def half_spin(self,spin_length):
+        t0 = rospy.Time.now().to_sec()
+        tFinal = t0 + spin_length
+        
+        # Closest to accurate 
+        ang_vel = (4 / spin_length) * (math.pi)
+
+        self.velocity.twist.linear.x = 0    # m/s
+        tHalf = t0 + (spin_length / 2)
+        while t0 < tFinal:
+            # Set linear and angular velocities for spin
+            self.velocity.twist.angular.z = ang_vel
+            
+            if t0 > tHalf:
+                self.velocity.twist.angular.z = -ang_vel
+
+            self.pub_cmd_vel.publish(self.velocity)
+            rospy.sleep(0.02)
+            t0 = rospy.Time.now().to_sec()
+
+        rospy.sleep(0.02)
+        self.velocity.twist.angular.z = ang_vel
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(5)
+
+    def wait(self):
+        self.velocity.twist.linear.x = 0
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.5)   
+                                                                                    
     def loop(self):
-        if self.command == "Spin Big":
-            movement.rotate()
+        if self.command == "full_spin":
+            movement.half_spin(10)
+            self.command = "not_spin"
         else:
             movement.wait()
 
 movement = BodyMoves()
 while not rospy.is_shutdown():
-    movement.loop()
+    #movement.rotate_m()
+    movement.half_spin(10)
 
     # Raghads VERSION !!!!
     """"def rotate(self):
@@ -110,24 +179,6 @@ while not rospy.is_shutdown():
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
     
-    def rotate_m(self):
-        t0 = rospy.Time.now()
-        print("MiRo rotating") 
-        while rospy.Time.now() < t0 + self.ACTION_DURATION:
-            self.velocity.twist.linear.x = 0
-            self.velocity.twist.angular.z = 5/math.pi
-            self.pub_cmd_vel.publish(self.velocity)
-            #check if 5 seconds have passed
-            if time.time() - t0.to_sec() >= 5:
-                #reset the timer
-                t0 = rospy.Time.now()
-                #reverse the direction of rotation
-                self.velocity.twist.angular.z = -5/math.pi
-                self.pub_cmd_vel.publish(self.velocity)
-        #stop the rotation
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
     """
     """"
     def rotate_m(self):
@@ -185,11 +236,6 @@ while not rospy.is_shutdown():
         self.pub_cmd_vel.publish(self.velocity)
         print("done")
     
-    def wait(self):
-        self.velocity.twist.linear.x = 0
-        self.velocity.twist.angular.z = 0
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(0.5)
 
     """
 
