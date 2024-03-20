@@ -34,6 +34,7 @@ class identifySongService():
         out = await shazam.recognize_song(directory+"/data/miro_audio.mp3")
         if len(out["matches"]) == 0 :
           self.song_title = ""
+          print("womp womp")
         else:
           self.song_title = out["track"]["title"]
       print("ye")

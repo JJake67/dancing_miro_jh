@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import rospy            # ROS Python interface
+import random
 from std_msgs.msg import UInt32MultiArray
 from dancing_miro.msg import lights
 
@@ -12,10 +13,14 @@ class IllumPublisher(object):
 
         # Parameters to be passed by Miro_Dance
         # Used to sync to the music 
-        self.tempo = 0
+        self.tempo = 0.0
+        self.t_4bars = 0.0
         # Used to denote what type of lights to do
         self.command = ""
         self.flash = True
+        self.color1 = "red"
+        self.color2 = "blue"
+        self.next_lights = 0
 
         # Subscribers and Publishers
         self.illumination = rospy.Publisher(
@@ -104,7 +109,7 @@ class IllumPublisher(object):
             self.illumination.publish(color_change)
             rospy.sleep(step_time)
         
-        print("done")
+        #print("done")
 
     def flashing_lights(self, colour1, colour2, flash_length):
         colour1_rgb = self.get_rgbs(colour1)
@@ -125,10 +130,26 @@ class IllumPublisher(object):
     # FUNCTIONS NEED TO MAKE
     # Searching for Song Lights 
     # Genre Specific Lights
-    
-    def loop(self):
-        if self.command != "":
-            self.flashing_lights("red","blue",self.tempo)
+    def set_new_light_mods(self):
+        colours = ["red","blue","green","yellow","orange","pink","purple"]
+        self.next_lights = random.randint(0,1)
+        color1 = random.randint(0,6)
+        color2 = random.randint(0,6)
+        self.color1 = colours[color1]
+        self.color2 = colours[color2]
+        
+
+    def loop(self,t,t0):
+        if self.tempo != 0.0:
+            if self.next_lights == 0:
+                self.flashing_lights(self.color1,self.color2,self.tempo)
+            if self.next_lights == 1:
+                self.transition_lights(self.color1,self.color2,self.tempo)
+                self.transition_lights(self.color2,self.color1,self.tempo)
+
+            if self.t_4bars <= t:
+                self.t_4bars = t + (32*self.tempo)
+                self.set_new_light_mods()
         #self.command="all_lights"
         #if self.command == "all_lights":
         #      self.set_all_lights("red")
@@ -139,23 +160,12 @@ class IllumPublisher(object):
         #      self.transition_lights("blue","red", 3)
 
 
-        """ OLD LOOP, KEEP COZ I HAVE ATTACHMENT ISSUES
-        if self.command == "blue":
-            blue = [51,204,70]
-            illum.blue(blue)
-            #illum.blue(blue)
-        if self.command == "rainbow":
-            colours = [purple,blue,green,red,orospy.sleep(0.02)
-        self.velocity.twist.angular.z = ang_vel
-        self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(5)range,yellow]
-            #illum.rainbow(colours)
-            illum.rainbowLoop()
-        """
 
 illum = IllumPublisher()
+t0 = rospy.get_time()
 while not rospy.is_shutdown():
-    illum.loop()
+    t = rospy.get_time()
+    illum.loop(t,t0)
     #illum.transition_lights("red","blue",illum.tempo)
     #illum.transition_lights("blue","red",illum.tempo)
     #rospy.sleep(5)
@@ -290,4 +300,17 @@ def OppRainbow(self):
     ]
     self.illumination.publish(color_change)
 
+
+         OLD LOOP, KEEP COZ I HAVE ATTACHMENT ISSUES
+        if self.command == "blue":
+            blue = [51,204,70]
+            illum.blue(blue)
+            #illum.blue(blue)
+        if self.command == "rainbow":
+            colours = [purple,blue,green,red,orospy.sleep(0.02)
+        self.velocity.twist.angular.z = ang_vel
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(5)range,yellow]
+            #illum.rainbow(colours)
+            illum.rainbowLoop()
 """

@@ -19,8 +19,9 @@ class JointPublisher(object):
         self.ear = 0.0
         self.eye = 0.0 
         self.tail = 0.0
+        self.num_of_joints = 6
 
-        self.harmonics = [0.5,1,2,4,2]
+        self.harmonics = [0.5,1,2,1,2]
         self.head_tilt = 0.0
         self.head_yaw = 0.0
         self.head_pitch = 0.0
@@ -34,7 +35,7 @@ class JointPublisher(object):
         self.pitch_modifier = 1
 
         self.t_4bars = 0.0
-        self.tempo = 2
+        self.tempo = 0.0
         self.command = ""
 
         self.start = rospy.Time.now().to_sec()
@@ -66,6 +67,7 @@ class JointPublisher(object):
         #print(topic_message.tempo)
         self.command = topic_message.move_name 
         self.tempo = 60 / topic_message.tempo
+        self.num_of_joints = topic_message.num_of_joints
     
     # I DONT UNDERSTAND WHY THESE EXIST WHEN YOU CAN JUST WRITE THE COMMAND JUST AS EASILY
     # movement for either tilt, lift, yaw or pitch
@@ -233,28 +235,50 @@ class JointPublisher(object):
         print(f"ears:{self.ear_modifier}, eyes:{self.eye_modifier}, yaw:{self.yaw_modifier}")
 
     def loop(self,t,t0):
-        if self.tempo != 0.0:
-            self.wag_tail(t,t0,self.tempo*self.tail_modifier)
-            self.move_ears(t,t0,self.tempo*self.ear_modifier)
-            self.move_eyes(t,t0,self.tempo*self.eye_modifier)
-            self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
-            self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
-            self.move_neck(t,t0,self.tempo*self.lift_modifier)
+        if self.command != "":
+            if self.command == "head_bounce":
+                self.soul_Head_Bounce(t,t0)
+            if self.command == "head_bang":
+                self.head_Banging(t,t0)
+            if self.command == "full_head_spin":
+                self.full_head_spin(t,t0)
+            if self.command == "head_bop":
+                self.head_bop(t,t0)
+            else:
+                self.head_bop(t,t0)
+                print("head bop but not the real one")
 
-            # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
-            if self.t_4bars <= t:
-                self.t_4bars = t + (16*self.tempo)
-                self.set_new_tempo_mods()
+        elif self.tempo != 0.0:
+            if self.num_of_joints == 2:
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+            if self.num_of_joints == 4:
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
+            if self.num_of_joints == 6:  
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
+                self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
+                self.move_neck(t,t0,self.tempo*self.lift_modifier)
+                # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
+                if self.t_4bars <= t:
+                    self.t_4bars = t + (32*self.tempo)
+                    self.set_new_tempo_mods()
+            
+            self.publish_cosmetics()
+            self.publish_kinematics()
 
-        self.publish_cosmetics()
-        self.publish_kinematics()
 
 
 movement = JointPublisher()
 t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time() 
-    #movement.loop(t,t0)
+    movement.loop(t,t0)
     #movement.wag_tail(t,t0,5)
     #movement.move_ears(t,t0,2)
     #movement.move_eyes(t,t0,3)

@@ -7,7 +7,6 @@ MiRo orienting towards a sound
 import os
 import numpy as np
 import rospy
-import miro2 as miro
 from node_detect_audio_engine import DetectAudioEngine
 from std_msgs.msg import Int16MultiArray,UInt16MultiArray, Bool
 from std_srvs.srv import SetBool, SetBoolResponse
@@ -20,7 +19,7 @@ import time
 import sys
 import wave, struct
 import pydub
-
+import miro2 as miro
 # Recording Setup 
 
 BUFFER_STUFF_SAMPLES = 4000
@@ -58,14 +57,6 @@ class listen_and_record():
         self.sub_mics = rospy.Subscriber(topic_base_name + "/sensors/mics",
             Int16MultiArray, self.callback_identify_mics, queue_size=1, tcp_nodelay=True)
         
-        # publishers
-        self.pub_push = rospy.Publisher(topic_base_name + "/core/mpg/push", miro.msg.push, queue_size=0)
-
-        # prepare push message
-        self.msg_push = miro.msg.push()
-        self.msg_push.link = miro.constants.LINK_HEAD
-        self.msg_push.flags = (miro.constants.PUSH_FLAG_NO_TRANSLATION + miro.constants.PUSH_FLAG_VELOCITY)
-
         # status flags
         self.audio_event = None
         self.orienting = False
@@ -74,8 +65,6 @@ class listen_and_record():
 
         # time
         self.frame_p = None
-        self.controller = miro.lib.PoseController()
-        self.cmd_vel = miro.lib.DeltaPose()
 
         # save previous head data
         #self.tmp = []
@@ -138,7 +127,7 @@ class listen_and_record():
             elif (len(self.tmp)<10500):
                 self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
             else:
-                # when the buffer is full
+                # when the buffer is 
                 self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
                 # dynamic threshold is calculated and updated when new signal come
                 self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)

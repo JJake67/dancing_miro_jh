@@ -3,6 +3,7 @@ import rospy
 import os
 import base64
 import json
+import random
 import numpy as np
 from dotenv import load_dotenv
 from requests import post, get
@@ -27,10 +28,17 @@ class MiroDance(object):
         self.sections = [] 
         
         # FOR TESTING
-        self.sections = [0,6,12,18,24,30,36,42,48]
+        #self.sections = [0,6,12,18,24,30,36,42,48]
         #self.tempo = 120
         self.song_name = ""
         self.last_beat = 0
+
+        # For Dancing
+        self.head_dance_move = ""
+        self.head_move_names = ["head_bounce","head_bang","full_head_spin","head_bop"]
+        self.body_dance_move = ""
+        self.lights_move = ""
+        #self.lights_colours = ""
 
         # Audio Features 
         self.danceability = 0.0
@@ -40,17 +48,9 @@ class MiroDance(object):
         self.client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
         self.client_secret = "a35830533528441f9ae304893a279b38"
         
-        #self.set_track_data()
         # SERVICES
         """
-        service_name = "identify_song"
-
-        rospy.wait_for_service(service_name) 
-        self.service_identify = rospy.ServiceProxy(service_name, SetBool)
-
-        self.request_to_identify = SetBoolRequest()
-        self.request_to_identify.data = True 
-
+        UNCOMMENT FOR LISTEN_AND_RECORD
         service_name = "listen_and_record_music"
 
         rospy.wait_for_service(service_name)
@@ -58,14 +58,22 @@ class MiroDance(object):
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
-        """
+        
         service_name = "estimate_tempo_and_beats"
-        print("waiting")
         rospy.wait_for_service(service_name)
         self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
-        print("done waiting")
+
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
+        """
+        if self.dance_mode == "Spotify":
+            service_name = "identify_song"
+
+            rospy.wait_for_service(service_name) 
+            self.service_identify = rospy.ServiceProxy(service_name, SetBool)
+
+            self.request_to_identify = SetBoolRequest()
+            self.request_to_identify.data = True 
 
 
 
@@ -85,8 +93,6 @@ class MiroDance(object):
         # localise_now : point_to_responsesound msg
         
         rospy.loginfo("Miro_Dance Node is Active...")
-        #rospy.sleep(5)
-        #self.set_track_data()
 
     # SPOTIFY 
     def set_track_data(self):
@@ -166,37 +172,65 @@ class MiroDance(object):
     def publish_body_cmds(self, value):
         message = body()
         message.tempo = self.tempo
+        # Using Spotify Data
         if value == True:
-            message.move_name = "Spin Big"
-            message.mode = True
+            message.move_name = self.lights_move
+        # Auto Mode
         else:
-            message.move_name = "Wait"
-            message.mode = True
+            message.move_name = ""
         self.bodyPub.publish(message)
         rospy.sleep(0.05)
 
     def publish_lights_cmd(self, value):
         message = lights()
         message.tempo = self.tempo
+        # Using Spotify Data
         if value == True:
-            message.move_name = "blue"
-        else : 
-            message.move_name = "rainbow"
+            message.move_name = self.body_dance_move
+        # Auto Mode
+        else:
+            message.move_name = ""
 
         self.lightsPub.publish(message)
         rospy.sleep(0.05)
 
-    def publish_head_cmd(self, value):
+    def publish_head_cmd(self, value,num_of_joints):
         message = head()
         message.tempo = self.tempo
+        message.num_of_joints = num_of_joints
+
+        # Using Spotify Data
         if value == True:
-            message.move_name = "head bang"
-            message.mode = True
+            message.move_name = self.head_dance_move
+        # Auto Mode
         else:
-            message.move_name = "soul nod"
-            message.mode = True
+            message.move_name = ""
+
+
         self.headPub.publish(message)
         rospy.sleep(0.05)
+
+    def change_moves_around(self):
+        # Base on genres: pop, rock, blues, metal, 
+        # For Head Dance Move
+        if self.genre == "pop":
+            dances_for_genre = [0,2,3]
+            index = random.randint(0,len(dances_for_genre))
+            self.head_dance_move = self.head_move_names[index]
+
+        if self.genre == "soul":
+            dances_for_genre = [0,3]
+            index = random.randint(0,len(dances_for_genre))
+            self.head_dance_move = self.head_move_names[index]
+
+        if self.genre == "metal":
+            dances_for_genre = [1]
+            index = random.randint(0,len(dances_for_genre))
+            self.head_dance_move = self.head_move_names[index]
+        else:
+            #Any move
+            index = random.randint(0,3)
+            self.head_dance_move = self.head_move_names[index]
 
     # MAIN PROGRAM LOOP 
     # ALL NEEDS REWORKING FOR DANCE_MODE 
@@ -204,62 +238,118 @@ class MiroDance(object):
         # Identify Song
         print("Play Music Now")
         
-        # Service stuff, get tempo and last beat (BOTH NEED)
-        response_est_tempo = self.service_tempo(self.request_for_tempo)
-        tempo_and_last_beat = response_est_tempo.message.split()
-        self.tempo = round(float(tempo_and_last_beat[0]),2)
-        self.last_beat = round(float(tempo_and_last_beat[1]),2)
-
+        # Service stuff, get tempo and last beat (BOTH NEED)#
+        # Synchronisation stuff mostly, tempo needed if using auto mode
+        
+        # UNCOMMENT FOR LISTEN AND RECORD
+        #response_listen_and_record = self.service_record(self.request_to_record)
+        
+        #response_est_tempo = self.service_tempo(self.request_for_tempo)
+        #tempo_and_last_beat = response_est_tempo.message.split()
+        #self.tempo = round(float(tempo_and_last_beat[0]),2)
+        #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         # Identify song name 
         # ONLY FOR SPOTIFY 
-        while self.song_name == "":
-            response_listen_and_record = self.service_record(self.request_to_record)
-            print("Plug in phone now")
-            response_song_identification = self.service_identify(self.request_to_identify) 
-            print(response_song_identification.message)
-            self.song_name = response_song_identification.message
-            print("song_name" + self.song_name)
-        # Retrieve Spotify Data, set object values to that data
+        if self.dance_mode == "Spotify":
+            while self.song_name == "":
+                print("Plug in phone now")
+                #rospy.sleep(10)
+                response_song_identification = self.service_identify(self.request_to_identify) 
+                print(response_song_identification.message)
+                if response_song_identification.message != "":
+                    self.song_name = response_song_identification.message
+                else:
+                    print("unplug phone")
+                    rospy.sleep(5)
+                    response_listen_and_record = self.service_record(self.request_to_record)
+            self.set_track_data()
+        print("song found")
+        rospy.sleep(5)
+        # Test stuff -----
         self.song_name == "ARound the world - Daft Punk"
-        self.set_track_data()
-        self.tempo = 72
-        
+        #self.set_track_data()
+        self.tempo = 120
+        # ENd of test stuff ---
+        beat_len = 60 / self.tempo
+        # avg song length in beats
+        avg_song_len  = 180/beat_len 
+        beats_array = [beat_len*16,beat_len*32,beat_len*48,beat_len*64,avg_song_len]
         print("WE MADE IT!!!!!!")
-        #rospy.sleep(5)
-        #print(self.sections)
-        #print(len(self.sections))
+        print(self.song_name)
+        print(self.tempo)
+        print(self.sections)
         start_time = rospy.get_time()
         
-        
-        autoMode = False
         while not rospy.is_shutdown():
-            # Calls identify_song service
-            #response_from_server = self.service(self.request_to_server) 
-            if self.song_name != "No":
-                #print("okay")
+            # Two Scenarios 
+            if self.dance_mode == "Auto":
+                self.publish_lights_cmd(False)
+                self.publish_body_cmds(False)
+                self.publish_head_cmd(False,6)
+                rospy.sleep(0.02)
+
+
+                # Gives the impression that the dancing
+                # is building as song progresses
+                # Might be too much
+                #for x in range(0,len(beats_array)):
+                #    current_time = rospy.get_time()-start_time
+                #    while current_time < beats_array[x]:
+
+                        #if x == 0:
+                        #    self.publish_head_cmd(False,2)
+                        #elif x == 1:
+                        #    self.publish_head_cmd(False,4)
+                        #    self.publish_lights_cmd(False)
+                        #elif x == 2:
+                        #    self.publish_head_cmd(False,6)
+                        #    self.publish_lights_cmd(False)
+                        #elif x == 3:
+                        #    self.publish_head_cmd(False,6)
+                        #    self.publish_lights_cmd(False)
+                        #    self.publish_body_cmds(False)
+
+                        #current_time = rospy.get_time()-start_time
+                
+                #print("Song Over")
+
+            autoMode = False
+            if self.dance_mode == "Spotify":
                 for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-start_time
                     while current_time < self.sections[x]: 
-
-                        #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
-                        self.publish_body_cmds(autoMode)
-                        self.publish_head_cmd(autoMode)
-                        self.publish_lights_cmd(autoMode)
-                        rospy.sleep(0.5)
-                        current_time = rospy.get_time()-start_time
+                        #print(autoMode)
+                        #self.publish_body_cmds(False)
+                        self.publish_head_cmd(False,6)
+                        #self.publish_lights_cmd(False)
+                        rospy.sleep(0.1)
+                        
+                    # Alternates between the auto kind of dancing
+                    # and specific dance moves 
                     autoMode = not autoMode
-            rospy.sleep(0.5)
+                    # only changes the dance moves if they will be used 
+                    # next iteration
+                    if autoMode == False:
+                        print("swapping moves")
+                        self.change_moves_around()
+                        print(self.head_dance_move)
         
-
-        
-#song_name = "Smooth Santana"
-#load_dotenv()
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
     args = rospy.myargv()
-    dance_mode = args[1]
+    dance_mode = str(args[1])
+    #print(f"#{dance_mode}#")
+    if dance_mode == "Spotify":
+        print("Spotify Mode")
+    elif dance_mode == "Auto":
+        print("auto mode")
+    else: 
+        print("No valid input, going into auto mode")
+        dance_mode = "Auto"
     main = MiroDance(dance_mode)
     main.loop()
+
+
 
 
 # CODE FOR MAKING this node into SERVICE_CLIENT for identify_song
@@ -275,3 +365,24 @@ if __name__ == "__main__":
 #        response_from_server = service(request_to_server) 
 # SHOULD RETURN THE SONG NAME SO FOR NOW I'LL JUST INSERT ONE
 #print(response_from_server)
+
+
+# OLD LOOP 
+            # Calls identify_song service
+            #response_from_server = self.service(self.request_to_server) 
+"""
+if self.song_name != "No":
+    #print("okay")
+    for x in range(0,len(self.sections)):
+        current_time = rospy.get_time()-start_time
+        while current_time < self.sections[x]: 
+
+            #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
+            self.publish_body_cmds(autoMode)
+            self.publish_head_cmd(autoMode)
+            self.publish_lights_cmd(autoMode)
+            rospy.sleep(0.5)
+            current_time = rospy.get_time()-start_time
+        autoMode = not autoMode
+rospy.sleep(0.5)
+"""
