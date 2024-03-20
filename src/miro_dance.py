@@ -14,7 +14,8 @@ class MiroDance(object):
 
     # Main Node for Creating Dance Movements
 
-    def __init__(self):
+    def __init__(self,dance_mode):
+        self.dance_mode = dance_mode
         self.ctrl_c = False
         self.genre = ""
         self.duration = 0.0 
@@ -26,9 +27,10 @@ class MiroDance(object):
         self.sections = [] 
         
         # FOR TESTING
-        #self.sections = [0,6,12,18,24,30,36,42,48]
+        self.sections = [0,6,12,18,24,30,36,42,48]
         #self.tempo = 120
         self.song_name = ""
+        self.last_beat = 0
 
         # Audio Features 
         self.danceability = 0.0
@@ -40,6 +42,7 @@ class MiroDance(object):
         
         #self.set_track_data()
         # SERVICES
+        """
         service_name = "identify_song"
 
         rospy.wait_for_service(service_name) 
@@ -55,6 +58,15 @@ class MiroDance(object):
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
+        """
+        service_name = "estimate_tempo_and_beats"
+        print("waiting")
+        rospy.wait_for_service(service_name)
+        self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
+        print("done waiting")
+        self.request_for_tempo = SetBoolRequest()
+        self.request_for_tempo.data = True 
+
 
 
         # SUBSCRIBERS
@@ -187,11 +199,19 @@ class MiroDance(object):
         rospy.sleep(0.05)
 
     # MAIN PROGRAM LOOP 
+    # ALL NEEDS REWORKING FOR DANCE_MODE 
     def loop(self):
         # Identify Song
         print("Play Music Now")
         
+        # Service stuff, get tempo and last beat (BOTH NEED)
+        response_est_tempo = self.service_tempo(self.request_for_tempo)
+        tempo_and_last_beat = response_est_tempo.message.split()
+        self.tempo = round(float(tempo_and_last_beat[0]),2)
+        self.last_beat = round(float(tempo_and_last_beat[1]),2)
 
+        # Identify song name 
+        # ONLY FOR SPOTIFY 
         while self.song_name == "":
             response_listen_and_record = self.service_record(self.request_to_record)
             print("Plug in phone now")
@@ -200,26 +220,31 @@ class MiroDance(object):
             self.song_name = response_song_identification.message
             print("song_name" + self.song_name)
         # Retrieve Spotify Data, set object values to that data
+        self.song_name == "ARound the world - Daft Punk"
         self.set_track_data()
-        print(self.song_name)
+        self.tempo = 72
+        
         print("WE MADE IT!!!!!!")
-        print(self.sections)
-        print(len(self.sections))
+        #rospy.sleep(5)
+        #print(self.sections)
+        #print(len(self.sections))
         start_time = rospy.get_time()
+        
+        
         autoMode = False
         while not rospy.is_shutdown():
             # Calls identify_song service
             #response_from_server = self.service(self.request_to_server) 
             if self.song_name != "No":
-                print("okay")
+                #print("okay")
                 for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-start_time
                     while current_time < self.sections[x]: 
 
                         #  HERE uses self.genre to choose a dancemove to be performed and or a light setting.
-                        #self.publish_body_cmds(autoMode)
-                        #self.publish_head_cmd(autoMode)
-                        #self.publish_lights_cmd(autoMode)
+                        self.publish_body_cmds(autoMode)
+                        self.publish_head_cmd(autoMode)
+                        self.publish_lights_cmd(autoMode)
                         rospy.sleep(0.5)
                         current_time = rospy.get_time()-start_time
                     autoMode = not autoMode
@@ -231,7 +256,9 @@ class MiroDance(object):
 #load_dotenv()
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
-    main = MiroDance()
+    args = rospy.myargv()
+    dance_mode = args[1]
+    main = MiroDance(dance_mode)
     main.loop()
 
 

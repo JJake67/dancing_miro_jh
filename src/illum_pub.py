@@ -27,9 +27,9 @@ class IllumPublisher(object):
 
     # Callback for when parameters are passed from Miro_Dance Node 
     def cmd_callback(self,topic_msg):
-        print(f'Node obtained msg: {topic_msg.move_name}')
+        #print(f'Node obtained msg: {topic_msg.move_name}')
         self.command = topic_msg.move_name
-        self.tempo = 30/topic_msg.tempo
+        self.tempo = 60/topic_msg.tempo
 
     def get_rgbs(self, colour_name):
         if colour_name == "red":
@@ -127,14 +127,16 @@ class IllumPublisher(object):
     # Genre Specific Lights
     
     def loop(self):
-        self.command="all_lights"
-        if self.command == "all_lights":
-              self.set_all_lights("red")
-        if self.command == "flashing lights":
-              self.flashing_lights("red","blue",2)
-        if self.command == "transition":
-              self.transition_lights("red","blue", 3)
-              self.transition_lights("blue","red", 3)
+        if self.command != "":
+            self.flashing_lights("red","blue",self.tempo)
+        #self.command="all_lights"
+        #if self.command == "all_lights":
+        #      self.set_all_lights("red")
+        #if self.command == "flashing lights":
+        #      self.flashing_lights("red","blue",2)
+        #if self.command == "transition":
+        #      self.transition_lights("red","blue", 3)
+        #      self.transition_lights("blue","red", 3)
 
 
         """ OLD LOOP, KEEP COZ I HAVE ATTACHMENT ISSUES
@@ -153,9 +155,9 @@ class IllumPublisher(object):
 
 illum = IllumPublisher()
 while not rospy.is_shutdown():
-    #illum.loop()
-    illum.transition_lights("red","blue",0.5)
-    illum.transition_lights("blue","red",0.5)
+    illum.loop()
+    #illum.transition_lights("red","blue",illum.tempo)
+    #illum.transition_lights("blue","red",illum.tempo)
     #rospy.sleep(5)
 
 """

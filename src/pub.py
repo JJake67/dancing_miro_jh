@@ -3,6 +3,7 @@ import os
 import time
 import rospy            # ROS Python interface
 import numpy as np
+import random
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import UInt32MultiArray, String
@@ -19,11 +20,20 @@ class JointPublisher(object):
         self.eye = 0.0 
         self.tail = 0.0
 
+        self.harmonics = [0.5,1,2,4,2]
         self.head_tilt = 0.0
         self.head_yaw = 0.0
         self.head_pitch = 0.0
         self.neck_lift = 0.0
 
+        self.ear_modifier = 1
+        self.eye_modifier = 1
+        self.tail_modifier = 1 
+        self.lift_modifier = 1 
+        self.yaw_modifier = 1 
+        self.pitch_modifier = 1
+
+        self.t_4bars = 0.0
         self.tempo = 2
         self.command = ""
 
@@ -51,8 +61,8 @@ class JointPublisher(object):
 
     # Callback for when parameters are passed from Miro_Dance Node 
     def cmd_callback(self,topic_message):
-        print(f'Node obtained msg: {topic_message.move_name}')
-        print(f'Node also said: {topic_message.mode}')
+        #print(f'Node obtained msg: {topic_message.move_name}')
+        #print(f'Node also said: {topic_message.mode}')
         #print(topic_message.tempo)
         self.command = topic_message.move_name 
         self.tempo = 60 / topic_message.tempo
@@ -212,20 +222,30 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 
+    def set_new_tempo_mods(self):
+        self.ear_modifier = self.harmonics[random.randint(0,4)]
+        self.tail_modifier = self.harmonics[random.randint(0,4)]
+        self.eye_modifier = self.harmonics[random.randint(0,4)]
+        self.yaw_modifier = self.harmonics[random.randint(0,4)]
+        self.pitch_modifier = self.harmonics[random.randint(0,4)]
+        self.lift_modifier = self.harmonics[random.randint(0,4)]
+        print("new ones set to...")
+        print(f"ears:{self.ear_modifier}, eyes:{self.eye_modifier}, yaw:{self.yaw_modifier}")
+
     def loop(self,t,t0):
-        self.wag_tail(t,t0,5)
-        self.move_ears(t,t0,3)
-        self.move_eyes(t,t0,2)
-        self.move_head_yaw(t,t0,1)
-        self.move_head_pitch(t,t0,3)
-        self.move_neck(t,t0,2)
         if self.tempo != 0.0:
-            self.wag_tail(t,t0,self.tempo)
-            self.move_ears(t,t0,self.tempo)
-            self.move_eyes(t,t0,self.tempo*4)
-            self.move_head_yaw(t,t0,self.tempo*2)
-            self.move_head_pitch(t,t0,self.tempo)
-            self.move_neck(t,t0,self.tempo*0.5)
+            self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+            self.move_ears(t,t0,self.tempo*self.ear_modifier)
+            self.move_eyes(t,t0,self.tempo*self.eye_modifier)
+            self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+            self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
+            self.move_neck(t,t0,self.tempo*self.lift_modifier)
+
+            # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
+            if self.t_4bars <= t:
+                self.t_4bars = t + (16*self.tempo)
+                self.set_new_tempo_mods()
+
         self.publish_cosmetics()
         self.publish_kinematics()
 
@@ -234,7 +254,7 @@ movement = JointPublisher()
 t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time() 
-    movement.loop(t,t0)
+    #movement.loop(t,t0)
     #movement.wag_tail(t,t0,5)
     #movement.move_ears(t,t0,2)
     #movement.move_eyes(t,t0,3)

@@ -45,7 +45,7 @@ class BodyMoves(object):
     #ACTION_DURATION = rospy.Duration(16.0)  # seconds
 
     def __init__(self):
-        self.command = "full_spin"
+        self.command = ""
         self.moveLength = 0.0
 
         # Get robot name
@@ -65,9 +65,9 @@ class BodyMoves(object):
 
     # Callback for when parameters are passed from Miro_Dance Node 
     def cmd_callback(self,topic_message):
-        print(f'Node obtained msg: {topic_message.move_name}')
-        print(f'Node also said: {topic_message.mode}')
-        #self.moveLength = topic_message.length
+        #print(f'Node obtained msg: {topic_message.move_name}')
+        #print(f'Node also said: {topic_message.mode}')
+        self.moveLength = topic_message.tempo / 20
         self.command = topic_message.move_name
 
 
@@ -106,7 +106,7 @@ class BodyMoves(object):
         tFinal = t0 + spin_length
         
         # Closest to accurate 
-        ang_vel = (4 / spin_length) * (math.pi)
+        ang_vel = (2 / spin_length) * (math.pi)
 
         self.velocity.twist.linear.x = 0    # m/s
 
@@ -121,7 +121,7 @@ class BodyMoves(object):
         rospy.sleep(0.02)
         self.velocity.twist.angular.z = ang_vel
         self.pub_cmd_vel.publish(self.velocity)
-        rospy.sleep(5)
+        rospy.sleep(self.moveLength)
 
     # RIGHT NOW ACTS LIKE MORE OF A WINDING PATH
     def half_spin(self,spin_length):
@@ -129,7 +129,7 @@ class BodyMoves(object):
         tFinal = t0 + spin_length
         
         # Closest to accurate 
-        ang_vel = (4 / spin_length) * (math.pi)
+        ang_vel = (2 / spin_length) * (math.pi)
 
         self.velocity.twist.linear.x = 0    # m/s
         tHalf = t0 + (spin_length / 2)
@@ -156,17 +156,20 @@ class BodyMoves(object):
         rospy.sleep(0.5)   
                                                                                     
     def loop(self):
-        if self.command == "full_spin":
-            movement.half_spin(10)
-            self.command = "not_spin"
-        else:
-            movement.wait()
+        if self.command != "":
+            rospy.sleep(1)
+            #print(self.moveLength)
+            self.full_spin(self.moveLength)
+        #if self.command == "full_spin":
+        #    movement.half_spin(10)
+        #    self.command = "not_spin"
+        #else:
+        #    movement.wait()
 
 movement = BodyMoves()
 while not rospy.is_shutdown():
     #movement.rotate_m()
-    movement.half_spin(10)
-
+    movement.loop()
     # Raghads VERSION !!!!
     """"def rotate(self):
         t0 = rospy.Time.now()
