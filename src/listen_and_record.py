@@ -76,7 +76,7 @@ class listen_and_record():
         # RECORDING INITIALISATIONS >>>>>>>
 
         # Create robot interface
-        self.interface = miro.lib.RobotInterface(node_name=None)
+
 
         #self.micbuf = [np.zeros((0, 4), 'uint16')]
         self.micbuf = None
@@ -92,12 +92,18 @@ class listen_and_record():
         topic = topic_base_name + "/sensors/stream"
         #print ("subscribe", topic)
         self.sub_stream = rospy.Subscriber(topic, UInt16MultiArray, self.callback_stream, queue_size=1, tcp_nodelay=True)
-       
-        self.interface.register_callback("microphones", self.callback_record_mics)
+        
+        # Same as below
+        self.sub_mics = rospy.Subscriber(topic,UInt16MultiArray,self.callback_record_mics,queue_size=10)
+
+        # THIS ONE IS PUBLISHING CMD_VEL
+        #self.interface = miro.lib.RobotInterface(node_name=None)
+        #self.interface.register_callback("microphones", self.callback_record_mics)
 
         #publishers
         topic = topic_base_name + "/control/stream"
         #print ("publish", topic)
+        
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
         print("Listen and Record Service Node now active ...")
            

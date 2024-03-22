@@ -27,7 +27,7 @@ from std_msgs.msg import (
     UInt16,
 )  # Used in callbacks
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
-from dancing_miro_v2_jh.msg import body
+from diss.msg import body
 #import miro2 as miro  # MiRo Developer Kit library
 """""
 try:  # For convenience, import this util separately
@@ -67,7 +67,7 @@ class BodyMoves(object):
     def cmd_callback(self,topic_message):
         #print(f'Node obtained msg: {topic_message.move_name}')
         #print(f'Node also said: {topic_message.mode}')
-        self.moveLength = topic_message.tempo / 20
+        self.moveLength = (60 / topic_message.tempo ) * 8 
         self.command = topic_message.move_name
 
 
@@ -136,13 +136,7 @@ class BodyMoves(object):
         while t0 < tFinal:
             # Set linear and angular velocities for spin
             self.velocity.twist.angular.z = ang_vel
-            
-            # Set linear and angular velocities for spin
-            self.velocity.twist.angular.z = ang_vel
-            
-            if t0 > tHalf:
-                self.velocity.twist.angular.z = -ang_vel
-
+    
             if t0 > tHalf:
                 self.velocity.twist.angular.z = -ang_vel
 
@@ -155,6 +149,30 @@ class BodyMoves(object):
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(5)
 
+    def small_rotate_and_back(self,spin_length):
+        t0 = rospy.Time.now().to_sec()
+        tFinal = t0 + spin_length
+        tHalf = t0 + (spin_length/2)
+        ang_vel = (2 / spin_length) * (math.pi/4)
+
+        while t0 < tFinal:
+            self.velocity.twist.angular.z = ang_vel
+
+                
+            if t0 > tHalf:
+                self.velocity.twist.angular.z = -ang_vel
+
+            self.pub_cmd_vel.publish(self.velocity)
+
+
+            rospy.sleep(0.02)
+            t0 = rospy.Time.now().to_sec()
+
+        # Move Done 
+        rospy.sleep(0.02)
+        self.velocity.twist.angular.z = 0
+        self.pub_cmd_vel.publish(self.velocity)
+
     def wait(self):
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
@@ -163,9 +181,12 @@ class BodyMoves(object):
                                                                                     
     def loop(self):
         if self.moveLength != 0.0:
-            rospy.sleep(1)
+            rospy.sleep(0.02)
             #print(self.moveLength)
-            self.full_spin(self.moveLength)
+            self.small_rotate_and_back(self.moveLength)
+            rospy.sleep(self.move_Length)
+        #self.small_rotate_and_back(4)
+        #rospy.sleep(1)
         #if self.command == "full_spin":
         #    movement.half_spin(10)
         #    self.command = "not_spin"
