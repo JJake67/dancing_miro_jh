@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(dancing_miro_v2_jh)
-
+project(diss)
+#dancing_miro_v2_jh
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -56,10 +56,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  SetBool.srv
-)
+#add_service_files(
+#  FILES
+#  SetBool.srv
+#)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
