@@ -27,7 +27,7 @@ from std_msgs.msg import (
     UInt16,
 )  # Used in callbacks
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
-from dancing_miro.msg import body
+from dancing_miro_v2_jh.msg import body
 #import miro2 as miro  # MiRo Developer Kit library
 """""
 try:  # For convenience, import this util separately

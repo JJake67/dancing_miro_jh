@@ -7,7 +7,7 @@ import random
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import UInt32MultiArray, String
-from dancing_miro.msg import head
+from dancing_miro_v2_jh.msg import head
 
 class JointPublisher(object):
     

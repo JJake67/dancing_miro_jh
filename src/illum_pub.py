@@ -3,7 +3,7 @@ import os
 import rospy            # ROS Python interface
 import random
 from std_msgs.msg import UInt32MultiArray
-from dancing_miro.msg import lights
+from dancing_miro_v2_jh.msg import lights
 
 class IllumPublisher(object):
     

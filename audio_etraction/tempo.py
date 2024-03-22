@@ -18,6 +18,11 @@ tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr,
 tempo = librosa.feature.rhythm.tempo(onset_envelope=oenv, sr=sr,
                            hop_length=hop_length)[0]
 
+tempo, beats = librosa.beat.beat_track(y=y,sr=sr)
+print(tempo)
+#'print(beats)
+time_stamps = librosa.frames_to_time(beats,sr=sr)
+print(time_stamps)
 fig, ax = plt.subplots(nrows=2, figsize=(15, 6))
 
 ax[0].plot(times, oenv, label='Onset strength')

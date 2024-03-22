@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from requests import post, get
 from std_msgs.msg import String
 from std_srvs.srv import SetBool, SetBoolRequest
-from dancing_miro.msg import body, lights, head
+from dancing_miro_v2_jh.msg import body, lights, head
 # from msg_place import SetString, SetStringResponse
 class MiroDance(object):
 
