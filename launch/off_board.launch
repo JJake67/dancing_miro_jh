@@ -1,5 +1,9 @@
 <launch> 
     <arg name="dancing_mode" default="auto" />
+    <node pkg = "diss" type = "identify_song.py" name = "identify_song" output = "screen" >
+    </node>
+    <node pkg = "diss" type = "listen_and_record.py" name = "listen_and_record" output = "screen" >
+    </node>
     <node pkg = "diss" type = "pub.py" name = "head_neck" output = "screen" >
     </node>
     <node pkg = "diss" type = "illum_pub.py" name = "LEDs" output = "screen">
