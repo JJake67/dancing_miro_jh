@@ -232,22 +232,25 @@ class AudioClient():
         if self.audio_event[0] is None:
             return
         print("angular in degrees:{:.2f}".format(self.audio_event[0].ang))
-        v = self.audio_event[0].azim
-        #MiRo finish its rotation in 0.5s
-        Tf = 0.5
-        T1=0
-        while(T1 <= Tf):
+        
+        # Stops him moving when he's within 6 degree of accuracy to the sound
+        if not (self.audio_event[0].ang > -10 and self.audio_event[0].ang < 10):
+            v = self.audio_event[0].azim
+            #MiRo finish its rotation in 0.5s
+            Tf = 0.5
+            T1=0
+            while(T1 <= Tf):
 
-            self.drive(v,v)
-            self.msg_wheels.twist.linear.x = 0.0
-            self.msg_wheels.twist.angular.z = v*2
+                self.drive(v,v)
+                self.msg_wheels.twist.linear.x = 0.0
+                self.msg_wheels.twist.angular.z = v*2
 
-            # test output
-            #self.msg_wheels.twist.angular.z = 0.0
+                # test output
+                #self.msg_wheels.twist.angular.z = 0.0
 
-            self.pub_wheels.publish(self.msg_wheels)
-            time.sleep(0.02)
-            T1+=0.02
+                self.pub_wheels.publish(self.msg_wheels)
+                time.sleep(0.02)
+                T1+=0.02
 
     def loop(self):
         msg_wheels = TwistStamped()

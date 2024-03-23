@@ -19,7 +19,7 @@ class MiroDance(object):
         self.ctrl_c = False
         self.genre = ""
         self.duration = 0.0 
-        #self.tempo = 0.0
+        self.tempo = 0.0
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
         
@@ -27,8 +27,8 @@ class MiroDance(object):
         self.sections = [] 
         
         # FOR TESTING
-        #self.sections = [0,6,12,18,24,30,36,42,48]
-        #self.tempo = 120
+        self.sections = [0,6,12,18,24,30,36,42,48]
+        self.tempo = 120
         self.song_name = ""
         self.last_beat = 0
 
@@ -50,6 +50,12 @@ class MiroDance(object):
         # SERVICES
         
         ##UNCOMMENT FOR LISTEN_AND_RECORD
+        service_name = "point_to_sound"
+
+        rospy.wait_for_service(service_name)
+        self.service_localise_MiRo = rospy.ServiceProxy(service_name, SetBool)
+        self.request_to_localise = True
+
         service_name = "listen_and_record_music"
 
         rospy.wait_for_service(service_name)
@@ -57,14 +63,15 @@ class MiroDance(object):
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
-        """
+        
+        # ESTIMATE TEMPO 
         service_name = "estimate_tempo_and_beats"
         rospy.wait_for_service(service_name)
         self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
 
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
-        """
+
         if self.dance_mode == "Spotify":
             service_name = "identify_song"
 
@@ -241,13 +248,17 @@ class MiroDance(object):
         # Synchronisation stuff mostly, tempo needed if using auto mode
         
         # UNCOMMENT FOR LISTEN AND RECORD
-        rospy.sleep(1)
-        tSongStart = rospy.get_time()
+        #response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
+        #print(response_point_to_sound.message)
+        
         response_listen_and_record = self.service_record(self.request_to_record)
-        #response_est_tempo = self.service_tempo(self.request_for_tempo)
-        #tempo_and_last_beat = response_est_tempo.message.split()
-        #self.tempo = round(float(tempo_and_last_beat[0]),2)
-        #self.last_beat = round(float(tempo_and_last_beat[1]),2)
+        response_est_tempo = self.service_tempo(self.request_for_tempo)
+        tempo_and_last_beat = response_est_tempo.message.split()
+        if self.dance_mode == "Auto":
+            self.tempo = round(float(tempo_and_last_beat[0]),2)
+        self.last_beat = round(float(tempo_and_last_beat[1]),2)
+        print(self.tempo)
+        print(self.last_beat)
         # Identify song name 
         # ONLY FOR SPOTIFY 
         if self.dance_mode == "Spotify":
@@ -316,12 +327,9 @@ class MiroDance(object):
                 #print("Song Over")
 
             autoMode = False
-            tMovesStart = rospy.get_time()
-            print(tMovesStart)
-            print(tSongStart)
             if self.dance_mode == "Spotify":
                 for x in range(0,len(self.sections)):
-                    current_time = rospy.get_time()-start_time + (tMovesStart -tSongStart)
+                    current_time = rospy.get_time()-start_time 
                     while current_time < self.sections[x]: 
                         #print(autoMode)
                         self.publish_body_cmds(False)

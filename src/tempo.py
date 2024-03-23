@@ -22,7 +22,7 @@ class estTempoAndBeats():
         print("service called")
         response_from_server = SetBoolResponse()
         if request_from_client.data == True:
-            y, sr = librosa.load('data/smooth (2).wav')
+            y, sr = librosa.load('/data/smooth (2).wav')
             hop_length = 512 
 
             # Compute local onset autocorrelation

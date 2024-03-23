@@ -4,6 +4,10 @@
     </node>
     <node pkg = "diss" type = "listen_and_record.py" name = "listen_and_record" output = "screen" >
     </node>
+    <node pkg = "diss" type = "tempo.py" name = "tempo_est" output = "screen" >
+    </node>
+    <node pkg = "diss" type = "point_to_sound_srv.py" name = "point_to_sound" output = "screen" >
+    </node>
     <node pkg = "diss" type = "pub.py" name = "head_neck" output = "screen" >
     </node>
     <node pkg = "diss" type = "illum_pub.py" name = "LEDs" output = "screen">

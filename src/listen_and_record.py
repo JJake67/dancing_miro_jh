@@ -13,6 +13,7 @@ import time
 import sys
 import wave, struct
 import pydub
+from RobotInterface import RobotInterface
 # Recording Setup 
 
 BUFFER_STUFF_SAMPLES = 4000
@@ -55,7 +56,7 @@ class listen_and_record():
         self.orienting = False
         self.action_time = 1 #secs
         self.thresh = 0.05
-
+        self.record_now = False
         # time
         self.frame_p = None
 
@@ -70,7 +71,7 @@ class listen_and_record():
 
         # Create robot interface
 
-
+        self.record_now = True
         #self.micbuf = [np.zeros((0, 4), 'uint16')]
         self.micbuf = None
         self.outbuf = None
@@ -91,8 +92,8 @@ class listen_and_record():
         #self.sub_mics = rospy.Subscriber(topic,UInt16MultiArray,self.callback_record_mics,queue_size=20)
 
         # THIS ONE IS PUBLISHING CMD_VEL NOT GOOD
-        #self.interface = miro.lib.RobotInterface(node_name=None)
-        #self.interface.register_callback("microphones", self.callback_record_mics)
+        self.interface = RobotInterface(node_name=None)
+        self.interface.register_callback("microphones", self.callback_record_mics)
 
         #publishers
         topic = topic_base_name + "/control/stream"
@@ -137,7 +138,7 @@ class listen_and_record():
             # 500 samples from each mics
             data = np.transpose(data.reshape((self.no_of_mics, 500)))
             data = np.flipud(data)
-            self.record_mics(data)  
+            #self.record_mics(data)  
             self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
   
     def voice_accident(self):
@@ -163,34 +164,31 @@ class listen_and_record():
     
     ## RECORDING THE AUDIO FUNCTIONS ---------------------------------------------------------------
 
-    def record_mics(self, msg):
-        # if recording
-        #l = []
-        if not self.micbuf is None:
-
-            # Data needs to be reshaped as it comes in from the mics 
-            msg = np.reshape(msg,(500,4))
-
-            #print(msg)
-            # append mic data to store
-            self.micbuf = np.concatenate((self.micbuf, msg))
-
-            # report
-            sys.stdout.write(".")
-            sys.stdout.flush()
-            rospy.sleep(0.02)
-            # finished recording?
-            if self.micbuf.shape[0] >= SAMPLE_COUNT:
-
-                    # end recording
-                self.outbuf = self.micbuf
-                self.micbuf = None
-                print ("Recording Ended")
-
     def callback_stream(self, msg):
         self.buffer_space = msg.data[0]
         self.buffer_total = msg.data[1]
         self.buffer_stuff = self.buffer_total - self.buffer_space
+
+    def callback_record_mics(self, msg):
+
+	# if recording
+        if self.record_now == True:
+            if not self.micbuf is None:
+
+                # append mic data to store
+                self.micbuf = np.concatenate((self.micbuf, msg.data))
+
+                # report
+                sys.stdout.write(".")
+                sys.stdout.flush()
+
+                # finished recording?
+                if self.micbuf.shape[0] >= SAMPLE_COUNT:
+
+                    # end recording
+                    self.outbuf = self.micbuf
+                    self.micbuf = None
+                    print (" OK!")
 
     def record_audio(self):
         # Take client audio.py
@@ -201,7 +199,7 @@ class listen_and_record():
                 break
 
 			# state
-            time.sleep(0.02)
+            rospy.sleep(0.02)
         
         # define output file 
         outfilename = self.directory + '/data/miro_audio.wav'
@@ -244,7 +242,9 @@ class listen_and_record():
                 ## Print that a sound has been detected
                 #print("Loud Signal Detected")
                 #print("Recording...")
+                self.record_now = True
                 self.record_audio()
+                self.record_now = False
                 #rospy.sleep(5)
                 #print("here?")
                 #clear the data collected when miro is turning
@@ -310,4 +310,53 @@ def loop(self):
                 # Fall back
                 else:
                     self.status_code = 1
+
+    def record_mics(self, msg):
+        # if recording
+        #l = []
+        if not self.micbuf is None:
+
+            # Data needs to be reshaped as it comes in from the mics 
+            msg = np.reshape(msg,(500,4))
+
+            #print(msg)
+            # append mic data to store
+            self.micbuf = np.concatenate((self.micbuf, msg))
+            # report
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            rospy.sleep(0.02)
+            # finished recording?
+            if self.micbuf.shape[0] >= SAMPLE_COUNT:
+                print(len(self.micbuf))
+                    # end recording
+                self.outbuf = self.micbuf
+                self.micbuf = None
+                print ("Recording Ended")
+
+    
+    def record_mics(self, msg):
+        # if recording
+        #l = []
+        if self.record_now:
+
+            # Data needs to be reshaped as it comes in from the mics 
+            msg = np.reshape(msg,(500,4))
+            if self.micbuf is None: 
+                self.micbuf = np.zeros((0, 4), 'uint16') 
+            #print(msg)
+            # append mic data to store
+            self.micbuf = np.concatenate((self.micbuf, msg))
+            # report
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            rospy.sleep(0.02)
+            # finished recording?
+            if self.micbuf.shape[0] >= SAMPLE_COUNT:
+                print(len(self.micbuf))
+                    # end recording
+                self.outbuf = self.micbuf
+                self.micbuf = None
+                print ("Recording Ended")
+
 """
