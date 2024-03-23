@@ -184,7 +184,7 @@ class BodyMoves(object):
             rospy.sleep(0.02)
             #print(self.moveLength)
             self.small_rotate_and_back(self.moveLength)
-            rospy.sleep(self.move_Length)
+            rospy.sleep(self.moveLength)
         #self.small_rotate_and_back(4)
         #rospy.sleep(1)
         #if self.command == "full_spin":

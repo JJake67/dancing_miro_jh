@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-MiRo orienting towards a sound
-"""
 # Detecting
 import os
 import numpy as np
@@ -10,16 +7,12 @@ import rospy
 from node_detect_audio_engine import DetectAudioEngine
 from std_msgs.msg import Int16MultiArray,UInt16MultiArray, Bool
 from std_srvs.srv import SetBool, SetBoolResponse
-from matplotlib.lines import Line2D
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 
 # Recording
 import time
 import sys
 import wave, struct
 import pydub
-import miro2 as miro
 # Recording Setup 
 
 BUFFER_STUFF_SAMPLES = 4000
@@ -39,7 +32,7 @@ class listen_and_record():
         # IDENTIFYING AUDIO INITIALISATIONS >>>>>>>>>
         #Microphone Parameters
         # Number of points to display
-        self.x_len = 40000
+        self.x_len = 20000
         # number of microphones coming through on topic
         self.no_of_mics = 4
 
@@ -91,12 +84,13 @@ class listen_and_record():
         #subscribers
         topic = topic_base_name + "/sensors/stream"
         #print ("subscribe", topic)
-        self.sub_stream = rospy.Subscriber(topic, UInt16MultiArray, self.callback_stream, queue_size=1, tcp_nodelay=True)
+        self.sub_stream = rospy.Subscriber(topic, UInt16MultiArray, self.callback_stream, queue_size=10, tcp_nodelay=True)
         
-        # Same as below
-        self.sub_mics = rospy.Subscriber(topic,UInt16MultiArray,self.callback_record_mics,queue_size=10)
+        # Does the same as below, but without cmd_vel
+        #topic = topic_base_name + "/sensors/mics"
+        #self.sub_mics = rospy.Subscriber(topic,UInt16MultiArray,self.callback_record_mics,queue_size=20)
 
-        # THIS ONE IS PUBLISHING CMD_VEL
+        # THIS ONE IS PUBLISHING CMD_VEL NOT GOOD
         #self.interface = miro.lib.RobotInterface(node_name=None)
         #self.interface.register_callback("microphones", self.callback_record_mics)
 
@@ -126,7 +120,7 @@ class listen_and_record():
 
             # data for dynamic thresholding
             data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
-            data_t = data_t.reshape((4, 500))    
+            data_t = data_t.reshape((4, 500))  
             self.head_data = data_t[2][:]
             if self.tmp is None:
                 self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
@@ -143,6 +137,7 @@ class listen_and_record():
             # 500 samples from each mics
             data = np.transpose(data.reshape((self.no_of_mics, 500)))
             data = np.flipud(data)
+            self.record_mics(data)  
             self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
   
     def voice_accident(self):
@@ -168,25 +163,29 @@ class listen_and_record():
     
     ## RECORDING THE AUDIO FUNCTIONS ---------------------------------------------------------------
 
-    def callback_record_mics(self, msg):
-        if self.start_listening == True:
-            # if recording
-            if not self.micbuf is None:
+    def record_mics(self, msg):
+        # if recording
+        #l = []
+        if not self.micbuf is None:
 
-                # append mic data to store
-                self.micbuf = np.concatenate((self.micbuf, msg.data))
+            # Data needs to be reshaped as it comes in from the mics 
+            msg = np.reshape(msg,(500,4))
 
-                # report
-                sys.stdout.write(".")
-                sys.stdout.flush()
+            #print(msg)
+            # append mic data to store
+            self.micbuf = np.concatenate((self.micbuf, msg))
 
-                # finished recording?
-                if self.micbuf.shape[0] >= SAMPLE_COUNT:
+            # report
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            rospy.sleep(0.02)
+            # finished recording?
+            if self.micbuf.shape[0] >= SAMPLE_COUNT:
 
                     # end recording
-                    self.outbuf = self.micbuf
-                    self.micbuf = None
-                    print ("Recording Ended")
+                self.outbuf = self.micbuf
+                self.micbuf = None
+                print ("Recording Ended")
 
     def callback_stream(self, msg):
         self.buffer_space = msg.data[0]
@@ -214,6 +213,7 @@ class listen_and_record():
         print ("writing two channels to file (LEFT and RIGHT)...")
         file.setnchannels(2)
         x = np.reshape(self.outbuf[:, [0, 1]], (-1))
+        print(len(x))
         for s in x:
             file.writeframes(struct.pack('<h', s))
         print(file.tell())
@@ -232,7 +232,7 @@ class listen_and_record():
         # This switch loops through MiRo behaviours:
         self.status_code = 0
         while request_from_client.data == True:
-            self.micbuf = np.zeros((1, 4), 'uint16')
+            self.micbuf = np.zeros((0, 4), 'uint16')
             self.start_listening = True
             # Step 1. sound event detection
             if self.status_code == 1:
@@ -241,13 +241,12 @@ class listen_and_record():
 
             # Step 2. Orient towards it
             elif self.status_code == 2:
-                self.start_listening == True
                 ## Print that a sound has been detected
-                print("Loud Signal Detected")
-                print("Recording...")
+                #print("Loud Signal Detected")
+                #print("Recording...")
                 self.record_audio()
                 #rospy.sleep(5)
-                print("here?")
+                #print("here?")
                 #clear the data collected when miro is turning
                 self.audio_event=[]
                 self.status_code = 1

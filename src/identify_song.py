@@ -31,7 +31,8 @@ class identifySongService():
       async def findSong():
         shazam = Shazam()
         # Waits until shazam identifies song
-        out = await shazam.recognize_song(directory+"/data/miro_audio.mp3")
+        out = await shazam.recognize(directory+"/data/miro_audio.mp3")
+        print(out)
         if len(out["matches"]) == 0 :
           self.song_title = ""
           print("womp womp")

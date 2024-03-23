@@ -48,8 +48,8 @@ class MiroDance(object):
         self.client_secret = "a35830533528441f9ae304893a279b38"
         
         # SERVICES
-        """
-        UNCOMMENT FOR LISTEN_AND_RECORD
+        
+        ##UNCOMMENT FOR LISTEN_AND_RECORD
         service_name = "listen_and_record_music"
 
         rospy.wait_for_service(service_name)
@@ -57,7 +57,7 @@ class MiroDance(object):
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
-        
+        """
         service_name = "estimate_tempo_and_beats"
         rospy.wait_for_service(service_name)
         self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
@@ -241,8 +241,9 @@ class MiroDance(object):
         # Synchronisation stuff mostly, tempo needed if using auto mode
         
         # UNCOMMENT FOR LISTEN AND RECORD
-        #response_listen_and_record = self.service_record(self.request_to_record)
-        
+        rospy.sleep(1)
+        tSongStart = rospy.get_time()
+        response_listen_and_record = self.service_record(self.request_to_record)
         #response_est_tempo = self.service_tempo(self.request_for_tempo)
         #tempo_and_last_beat = response_est_tempo.message.split()
         #self.tempo = round(float(tempo_and_last_beat[0]),2)
@@ -251,24 +252,26 @@ class MiroDance(object):
         # ONLY FOR SPOTIFY 
         if self.dance_mode == "Spotify":
             while self.song_name == "":
-                print("Plug in phone now")
+                print("Plug in phone now, you have 10 seconds")
                 #rospy.sleep(10)
                 response_song_identification = self.service_identify(self.request_to_identify) 
                 print(response_song_identification.message)
                 if response_song_identification.message != "":
                     self.song_name = response_song_identification.message
                 else:
-                    print("unplug phone")
+                    print("unplug phone, cont playing music")
                     rospy.sleep(5)
                     response_listen_and_record = self.service_record(self.request_to_record)
             self.set_track_data()
         print("song found")
+
         rospy.sleep(5)
         # Test stuff -----
-        self.song_name == "ARound the world - Daft Punk"
+        #self.song_name == "ARound the world - Daft Punk"
         #self.set_track_data()
-        self.tempo = 120
+        #self.tempo = 120
         # ENd of test stuff ---
+
         beat_len = 60 / self.tempo
         # avg song length in beats
         avg_song_len  = 180/beat_len 
@@ -313,14 +316,17 @@ class MiroDance(object):
                 #print("Song Over")
 
             autoMode = False
+            tMovesStart = rospy.get_time()
+            print(tMovesStart)
+            print(tSongStart)
             if self.dance_mode == "Spotify":
                 for x in range(0,len(self.sections)):
-                    current_time = rospy.get_time()-start_time
+                    current_time = rospy.get_time()-start_time + (tMovesStart -tSongStart)
                     while current_time < self.sections[x]: 
                         #print(autoMode)
-                        #self.publish_body_cmds(False)
+                        self.publish_body_cmds(False)
                         self.publish_head_cmd(False,6)
-                        #self.publish_lights_cmd(False)
+                        self.publish_lights_cmd(False)
                         rospy.sleep(0.1)
                         
                     # Alternates between the auto kind of dancing

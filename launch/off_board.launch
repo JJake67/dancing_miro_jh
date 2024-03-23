@@ -1,11 +1,11 @@
 <launch> 
     <arg name="dancing_mode" default="auto" />
-    <node pkg = "dancing_miro" type = "pub.py" name = "head_neck" output = "screen" >
+    <node pkg = "diss" type = "pub.py" name = "head_neck" output = "screen" >
     </node>
-    <node pkg = "dancing_miro" type = "illum_pub.py" name = "LEDs" output = "screen">
+    <node pkg = "diss" type = "illum_pub.py" name = "LEDs" output = "screen">
     </node>
-    <node pkg = "dancing_miro" type = "body_moves.py" name = "body" output = "screen" >
+    <node pkg = "diss" type = "body_moves.py" name = "body" output = "screen" >
     </node>
-    <node pkg = "dancing_miro" type = "miro_dance.py" name = "miro_dance" args="$(arg dancing_mode)" output = "screen" >
+    <node pkg = "diss" type = "miro_dance.py" name = "miro_dance" args="$(arg dancing_mode)" output = "screen" >
     </node>
 </launch>
