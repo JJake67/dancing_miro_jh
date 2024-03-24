@@ -32,7 +32,7 @@ class listen_and_record():
     def __init__(self):       
         # IDENTIFYING AUDIO INITIALISATIONS >>>>>>>>>
         #Microphone Parameters
-        # Number of points to display
+        # Nothing to do with the recording :) 
         self.x_len = 20000
         # number of microphones coming through on topic
         self.no_of_mics = 4
@@ -73,7 +73,7 @@ class listen_and_record():
 
         self.record_now = True
         #self.micbuf = [np.zeros((0, 4), 'uint16')]
-        self.micbuf = None
+        self.micbuf = np.zeros((0, 4), 'uint16')
         self.outbuf = None
         self.buffer_stuff = 0
         self.playchan = 0
@@ -230,7 +230,6 @@ class listen_and_record():
         # This switch loops through MiRo behaviours:
         self.status_code = 0
         while request_from_client.data == True:
-            self.micbuf = np.zeros((0, 4), 'uint16')
             self.start_listening = True
             # Step 1. sound event detection
             if self.status_code == 1:

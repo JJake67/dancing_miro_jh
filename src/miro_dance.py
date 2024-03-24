@@ -20,9 +20,10 @@ class MiroDance(object):
         self.genre = ""
         self.duration = 0.0 
         self.tempo = 0.0
+        self.beat_len = 0.0
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
-        
+
         self.bars = []
         self.sections = [] 
         
@@ -244,55 +245,73 @@ class MiroDance(object):
         # Identify Song
         print("Play Music Now")
         
-        # Service stuff, get tempo and last beat (BOTH NEED)#
-        # Synchronisation stuff mostly, tempo needed if using auto mode
-        
-        # UNCOMMENT FOR LISTEN AND RECORD
+        # Calls service that gets MiRo to face the source of the sound 
         #response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
         #print(response_point_to_sound.message)
         
+        # Calls service that records the MiRo's microphones when music is playing and
+        # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
+
+        # Calls service that estimates tempo (needed for auto mode) and the time 
+        # of the last beat in the recording (needed for synchronisation)
         response_est_tempo = self.service_tempo(self.request_for_tempo)
         tempo_and_last_beat = response_est_tempo.message.split()
+
+        # if dance_mode is Spotify, it will retrieve the tempo that way and 
+        # likely be more accurate
         if self.dance_mode == "Auto":
             self.tempo = round(float(tempo_and_last_beat[0]),2)
+            
+            self.beat_len = 60 / self.tempo
+
+            # Assumes the avg song is 3 minutes long
+            avg_song_len  = 180/self.beat_len 
+            beats_array = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
+
         self.last_beat = round(float(tempo_and_last_beat[1]),2)
+
         print(self.tempo)
         print(self.last_beat)
-        # Identify song name 
-        # ONLY FOR SPOTIFY 
+        
+        # Calls service that uses shazam to identify the song name
+        # and then calls methods that access Spotify API to retrieve
+        # audio analysis (tempo, beats, sections etc)
         if self.dance_mode == "Spotify":
+
+            # Loops until shazam finds the song, may require multiple recordings for shazam to find it 
             while self.song_name == "":
                 print("Plug in phone now, you have 10 seconds")
-                #rospy.sleep(10)
                 response_song_identification = self.service_identify(self.request_to_identify) 
                 print(response_song_identification.message)
                 if response_song_identification.message != "":
                     self.song_name = response_song_identification.message
+                    print("song found")
                 else:
                     print("unplug phone, cont playing music")
                     rospy.sleep(5)
                     response_listen_and_record = self.service_record(self.request_to_record)
-            self.set_track_data()
-        print("song found")
 
-        rospy.sleep(5)
+            # Calls Spotify only once the song name has definitely been found
+            self.set_track_data()
+            self.beat_len = 60 / self.tempo
+
         # Test stuff -----
         #self.song_name == "ARound the world - Daft Punk"
         #self.set_track_data()
         #self.tempo = 120
-        # ENd of test stuff ---
+        # End of test stuff ---
 
-        beat_len = 60 / self.tempo
+        self.beat_len = 60 / self.tempo
         # avg song length in beats
-        avg_song_len  = 180/beat_len 
-        beats_array = [beat_len*16,beat_len*32,beat_len*48,beat_len*64,avg_song_len]
-        print("WE MADE IT!!!!!!")
+        print("SONG INFO")
+        print("------------------------------------")
         print(self.song_name)
         print(self.tempo)
         print(self.sections)
+        print("------------------------------------")
         start_time = rospy.get_time()
-        
+        # Dancing State, repeats until the programmed is cancelled
         while not rospy.is_shutdown():
             # Two Scenarios 
             if self.dance_mode == "Auto":
