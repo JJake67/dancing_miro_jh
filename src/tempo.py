@@ -5,6 +5,7 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, SetBoolResponse
@@ -22,7 +23,10 @@ class estTempoAndBeats():
         print("service called")
         response_from_server = SetBoolResponse()
         if request_from_client.data == True:
-            y, sr = librosa.load('/data/smooth (2).wav')
+            # NEED TO FIGURE OUT HOW TO FOLDER ROUTE 
+            full_path = os.path.realpath(__file__)
+            path, filename = os.path.split(full_path)
+            y, sr = librosa.load(path + '/data/miro_audio.wav')
             hop_length = 512 
 
             # Compute local onset autocorrelation

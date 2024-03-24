@@ -100,47 +100,48 @@ class listen_and_record():
         #print ("publish", topic)
         
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
+
+        self.music_start_time = 0.0
         print("Listen and Record Service Node now active ...")
            
     def callback_identify_mics(self, data):
-        if self.start_listening == True:
-            # data for angular calculation
-            self.audio_event = AudioEng.process_data(data.data)
+        # data for angular calculation
+        self.audio_event = AudioEng.process_data(data.data)
 
-            now = rospy.Time.now()
-            zero_time = rospy.Time()
+        now = rospy.Time.now()
+        zero_time = rospy.Time()
 
-            #print ('Fields are', now.secs, now.nsecs)
+        #print ('Fields are', now.secs, now.nsecs)
 
-            # Time arithmetic
-            five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
+        # Time arithmetic
+        five_secs_ago = now - rospy.Duration(5) # Time minus Duration is a Time
 
-            # NOTE: in general, you will want to avoid using time.time() in ROS code
-            py_time = rospy.Time.from_sec(time.time())
-            # 1.2 1.7 2.2  -> predict -> start in sync
+        # NOTE: in general, you will want to avoid using time.time() in ROS code
+        py_time = rospy.Time.from_sec(time.time())
+        # 1.2 1.7 2.2  -> predict -> start in sync
 
-            # data for dynamic thresholding
-            data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
-            data_t = data_t.reshape((4, 500))  
-            self.head_data = data_t[2][:]
-            if self.tmp is None:
-                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-            elif (len(self.tmp)<10500):
-                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-            else:
-                # when the buffer is 
-                self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
-                # dynamic threshold is calculated and updated when new signal come
-                self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
+        # data for dynamic thresholding
+        data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
+        data_t = data_t.reshape((4, 500))  
+        self.head_data = data_t[2][:]
+        if self.tmp is None:
+            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+        elif (len(self.tmp)<10500):
+            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+        else:
+            # when the buffer is 
+            self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
+            # dynamic threshold is calculated and updated when new signal come
+            self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
 
-            # data for display
-            data = np.asarray(data.data)
-            # 500 samples from each mics
-            data = np.transpose(data.reshape((self.no_of_mics, 500)))
-            data = np.flipud(data)
-            #self.record_mics(data)  
-            self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
-  
+        # data for display
+        data = np.asarray(data.data)
+        # 500 samples from each mics
+        data = np.transpose(data.reshape((self.no_of_mics, 500)))
+        data = np.flipud(data)
+        #self.record_mics(data)  
+        self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
+
     def voice_accident(self):
         m = 0.00
         if self.audio_event != []:
@@ -171,24 +172,24 @@ class listen_and_record():
 
     def callback_record_mics(self, msg):
 
-	# if recording
-        if self.record_now == True:
-            if not self.micbuf is None:
+        if self.start_listening == True:
+            if self.record_now == True:
+                if not self.micbuf is None:
 
-                # append mic data to store
-                self.micbuf = np.concatenate((self.micbuf, msg.data))
+                    # append mic data to store
+                    self.micbuf = np.concatenate((self.micbuf, msg.data))
 
-                # report
-                sys.stdout.write(".")
-                sys.stdout.flush()
+                    # report
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
 
-                # finished recording?
-                if self.micbuf.shape[0] >= SAMPLE_COUNT:
+                    # finished recording?
+                    if self.micbuf.shape[0] >= SAMPLE_COUNT:
 
-                    # end recording
-                    self.outbuf = self.micbuf
-                    self.micbuf = None
-                    print (" OK!")
+                        # end recording
+                        self.outbuf = self.micbuf
+                        self.micbuf = None
+                        print (" OK!")
 
     def record_audio(self):
         # Take client audio.py
@@ -220,8 +221,8 @@ class listen_and_record():
         #Converts to mp3
         print ("wrote output file at", outfilename)
         sound = pydub.AudioSegment.from_wav(outfilename)
-        mp3_output = self.directory + '/data/miro_audio.mp3'
-        sound.export(mp3_output,format="mp3")
+        ogg_output = self.directory + '/data/miro_audio.ogg'
+        sound.export(ogg_output,format="ogg")
 
     def srv_callback(self,request_from_client):
         # HOW TO GET PATH WHEN os.getcwd DOESNT WORK
@@ -230,7 +231,6 @@ class listen_and_record():
         # This switch loops through MiRo behaviours:
         self.status_code = 0
         while request_from_client.data == True:
-            self.start_listening = True
             # Step 1. sound event detection
             if self.status_code == 1:
                 # Every once in a while, look for ball
@@ -239,18 +239,22 @@ class listen_and_record():
             # Step 2. Orient towards it
             elif self.status_code == 2:
                 ## Print that a sound has been detected
-                #print("Loud Signal Detected")
-                #print("Recording...")
+                print("Loud Signal Detected")
+                print("Recording...")
+                self.start_listening = True
+                self.music_start_time = rospy.get_time()
+                print(self.music_start_time)
                 self.record_now = True
                 self.record_audio()
                 self.record_now = False
                 #rospy.sleep(5)
-                #print("here?")
+                print("here?")
                 #clear the data collected when miro is turning
                 self.audio_event=[]
                 self.status_code = 1
+                self.start_listening = False
                 response_from_server.success = True
-                response_from_server.message = "Yay"
+                response_from_server.message = str(self.music_start_time)
 
                 # Resets these two so that the service can be called again
                 self.micbuf = None

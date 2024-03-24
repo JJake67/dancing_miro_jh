@@ -20,7 +20,9 @@ class identifySongService():
 
   def srv_callback(self, request_from_client):
     directory = os.getcwd()
-    print(directory)
+    full_path = os.path.realpath(__file__)
+    path, filename = os.path.split(full_path)
+    print(path)
     print("plz")
     response_from_server = SetBoolResponse()
     print("plug phone")
@@ -31,7 +33,7 @@ class identifySongService():
       async def findSong():
         shazam = Shazam()
         # Waits until shazam identifies song
-        out = await shazam.recognize(directory+"/data/smooth_5secs.mp3")
+        out = await shazam.recognize(path+"/data/miro_audio.ogg")
         print(out)
         if len(out["matches"]) == 0 :
           self.song_title = ""

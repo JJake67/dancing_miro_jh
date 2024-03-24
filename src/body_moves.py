@@ -136,6 +136,7 @@ class BodyMoves(object):
         while t0 < tFinal:
             # Set linear and angular velocities for spin
             self.velocity.twist.angular.z = ang_vel
+            self.velocity.twist.linear.x = -0.1
     
             if t0 > tHalf:
                 self.velocity.twist.angular.z = -ang_vel
@@ -157,7 +158,7 @@ class BodyMoves(object):
 
         while t0 < tFinal:
             self.velocity.twist.angular.z = ang_vel
-
+            self.velocity.twist.linear.x = -0.1
                 
             if t0 > tHalf:
                 self.velocity.twist.angular.z = -ang_vel
@@ -183,7 +184,7 @@ class BodyMoves(object):
         if self.moveLength != 0.0:
             rospy.sleep(0.02)
             #print(self.moveLength)
-            self.small_rotate_and_back(self.moveLength)
+            self.full_spin(self.moveLength)
             rospy.sleep(self.moveLength)
         #self.small_rotate_and_back(4)
         #rospy.sleep(1)

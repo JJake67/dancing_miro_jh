@@ -236,6 +236,7 @@ class JointPublisher(object):
 
     def loop(self,t,t0):
         if self.command != "":
+            print(self.command)
             if self.command == "head_bounce":
                 self.soul_Head_Bounce(t,t0)
             if self.command == "head_bang":
@@ -246,7 +247,7 @@ class JointPublisher(object):
                 self.head_bop(t,t0)
             else:
                 self.head_bop(t,t0)
-                print("head bop but not the real one")
+                #print("head bop but not the real one")
 
         elif self.tempo != 0.0:
             if self.num_of_joints == 2:

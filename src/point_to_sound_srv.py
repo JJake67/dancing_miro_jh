@@ -71,6 +71,7 @@ class PointToSoundService():
         # Service Setup
         self.localise = False
         self.start_time = 0 
+        self.music_start_time = 0
 
         service_name = "point_to_sound"
         rospy.init_node(f"{service_name}_server")
@@ -140,6 +141,8 @@ class PointToSoundService():
 
             # Step 2. Orient towards it
             elif self.status_code == 2:
+                if self.music_start_time == 0:
+                    self.music_start_time = rospy.get_time()
                 self.lock_onto_sound(self.frame)
                 #clear the data collected when miro is turning
                 self.audio_event=[]
@@ -150,7 +153,7 @@ class PointToSoundService():
             print(time_stood_still)
             if time_stood_still > 5:
                 response_from_server.success = True
-                response_from_server.message = "5 seconds has passed with no movement, the sound is localised"
+                response_from_server.message = str(self.music_start_time)
                 return response_from_server
 
     def voice_accident(self):

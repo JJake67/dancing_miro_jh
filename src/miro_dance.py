@@ -28,8 +28,8 @@ class MiroDance(object):
         self.sections = [] 
         
         # FOR TESTING
-        self.sections = [0,6,12,18,24,30,36,42,48]
-        self.tempo = 120
+        #self.sections = [0,6,12,18,24,30,36,42,48]
+        #self.tempo = 120
         self.song_name = ""
         self.last_beat = 0
 
@@ -181,7 +181,7 @@ class MiroDance(object):
         message.tempo = self.tempo
         # Using Spotify Data
         if value == True:
-            message.move_name = self.lights_move
+            message.move_name = self.head_dance_move
         # Auto Mode
         else:
             message.move_name = ""
@@ -239,6 +239,18 @@ class MiroDance(object):
             index = random.randint(0,3)
             self.head_dance_move = self.head_move_names[index]
 
+    # Calculates how long to wait before publishing in order for commands to be in sync with the song beat
+    def length_to_wait(self, length_into_song):
+        beat_to_join = self.last_beat + ( 8 * self.beat_len)
+
+        while beat_to_join < length_into_song + 0.1:
+            beat_to_join = beat_to_join + ( 8 * self.beat_len)
+        
+                        
+        # Takes about 0.15 seconds to publish commands so send publish 0.1 seconds before actual beat
+        length_to_sleep = beat_to_join - length_into_song - 0.1
+        return length_to_sleep 
+
     # MAIN PROGRAM LOOP 
     # ALL NEEDS REWORKING FOR DANCE_MODE 
     def loop(self):
@@ -246,12 +258,13 @@ class MiroDance(object):
         print("Play Music Now")
         
         # Calls service that gets MiRo to face the source of the sound 
-        #response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
-        #print(response_point_to_sound.message)
+        response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
+        music_start_time = float(response_point_to_sound.message)
         
         # Calls service that records the MiRo's microphones when music is playing and
         # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
+        #music_start_time = float(response_listen_and_record.message)
 
         # Calls service that estimates tempo (needed for auto mode) and the time 
         # of the last beat in the recording (needed for synchronisation)
@@ -261,18 +274,15 @@ class MiroDance(object):
         # if dance_mode is Spotify, it will retrieve the tempo that way and 
         # likely be more accurate
         if self.dance_mode == "Auto":
-            self.tempo = round(float(tempo_and_last_beat[0]),2)
+            self.tempo = int(float(tempo_and_last_beat[0]))
             
             self.beat_len = 60 / self.tempo
 
             # Assumes the avg song is 3 minutes long
             avg_song_len  = 180/self.beat_len 
-            beats_array = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
+            self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
 
         self.last_beat = round(float(tempo_and_last_beat[1]),2)
-
-        print(self.tempo)
-        print(self.last_beat)
         
         # Calls service that uses shazam to identify the song name
         # and then calls methods that access Spotify API to retrieve
@@ -304,20 +314,31 @@ class MiroDance(object):
 
         self.beat_len = 60 / self.tempo
         # avg song length in beats
-        print("SONG INFO")
+        print("SONG INFO") # For My Own Sake 
         print("------------------------------------")
         print(self.song_name)
         print(self.tempo)
+        print(self.last_beat)
         print(self.sections)
         print("------------------------------------")
+
         start_time = rospy.get_time()
+        dance_start_time = 0 
         # Dancing State, repeats until the programmed is cancelled
         while not rospy.is_shutdown():
+            if dance_start_time == 0:
+                dance_start_time = float(rospy.get_time())
+                how_far_into_song = dance_start_time  + 5 - music_start_time
+                length_to_wait = self.length_to_wait(how_far_into_song)
+                print(length_to_wait)
+                rospy.sleep(length_to_wait)
+                print(f"the dance moves started {how_far_into_song} seconds after the song started")
             # Two Scenarios 
             if self.dance_mode == "Auto":
                 self.publish_lights_cmd(False)
                 self.publish_body_cmds(False)
-                self.publish_head_cmd(False,6)
+                self.publish_head_cmd(False,6) 
+
                 rospy.sleep(0.02)
 
 
@@ -344,7 +365,6 @@ class MiroDance(object):
                         #current_time = rospy.get_time()-start_time
                 
                 #print("Song Over")
-
             autoMode = False
             if self.dance_mode == "Spotify":
                 for x in range(0,len(self.sections)):
@@ -353,7 +373,9 @@ class MiroDance(object):
                         #print(autoMode)
                         self.publish_body_cmds(False)
                         self.publish_head_cmd(False,6)
+                        #self.publish_head_cmd(autoMode,6)
                         self.publish_lights_cmd(False)
+                        current_time = rospy.get_time()-start_time
                         rospy.sleep(0.1)
                         
                     # Alternates between the auto kind of dancing
