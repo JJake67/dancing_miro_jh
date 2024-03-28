@@ -66,9 +66,9 @@ class MiroDance(object):
         self.request_to_record.data = True
         
         # ESTIMATE TEMPO 
-        service_name = "estimate_tempo_and_beats"
-        rospy.wait_for_service(service_name)
-        self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
+        #service_name = "estimate_tempo_and_beats"
+        #rospy.wait_for_service(service_name)
+        #self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
 
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
@@ -268,9 +268,9 @@ class MiroDance(object):
 
         # Calls service that estimates tempo (needed for auto mode) and the time 
         # of the last beat in the recording (needed for synchronisation)
-        response_est_tempo = self.service_tempo(self.request_for_tempo)
-        tempo_and_last_beat = response_est_tempo.message.split()
-
+        #response_est_tempo = self.service_tempo(self.request_for_tempo)
+        #tempo_and_last_beat = response_est_tempo.message.split()
+        tempo_and_last_beat = 0 
         # if dance_mode is Spotify, it will retrieve the tempo that way and 
         # likely be more accurate
         if self.dance_mode == "Auto":
@@ -282,7 +282,7 @@ class MiroDance(object):
             avg_song_len  = 180/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
 
-        self.last_beat = round(float(tempo_and_last_beat[1]),2)
+        #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         
         # Calls service that uses shazam to identify the song name
         # and then calls methods that access Spotify API to retrieve
@@ -323,7 +323,7 @@ class MiroDance(object):
         print("------------------------------------")
 
         start_time = rospy.get_time()
-        dance_start_time = 0 
+        dance_start_time = 0
         # Dancing State, repeats until the programmed is cancelled
         while not rospy.is_shutdown():
             if dance_start_time == 0:
