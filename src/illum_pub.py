@@ -16,8 +16,9 @@ class IllumPublisher(object):
         self.tempo = 0.0
         self.t_4bars = 0.0
         # Used to denote what type of lights to do
-        self.command = ""
+        self.genre = ""
         self.flash = True
+        self.colours = []
         self.color1 = "red"
         self.color2 = "blue"
         self.next_lights = 0
@@ -33,8 +34,30 @@ class IllumPublisher(object):
     # Callback for when parameters are passed from Miro_Dance Node 
     def cmd_callback(self,topic_msg):
         #print(f'Node obtained msg: {topic_msg.move_name}')
-        self.command = topic_msg.move_name
+        
+        # Check if the genre has changed, if so needs to update the 
+        # colours that will be used
+        if self.genre != topic_msg.move_name:
+            self.genre = topic_msg.move_name
+            self.set_colours_by_genre()
+
         self.tempo = 60/topic_msg.tempo
+
+    def set_colours_by_genre(self):
+        if self.genre == "pop":
+            self.colours = ["red","pink","purple","yellow","orange","white"]
+        elif self.genre == "soul":
+            self.colours = ["purple","blue","green"]
+        elif self.genre == "electronic":
+            self.colours = ["blue","red","pink"]
+        elif self.genre == "rock":
+            self.colours = ["black","blue",]
+        elif self.genre == "blues":
+            self.colours = ["blue","blue"]
+        elif self.genre == "metal":
+            self.colours = ["black","white"]
+        elif self.genre == "classical":
+            self.colours = ["yellow","orange","white"]
 
     def get_rgbs(self, colour_name):
         if colour_name == "red":
@@ -55,6 +78,8 @@ class IllumPublisher(object):
                 return [255,0,255]
         elif colour_name == "white":
                 return [255,255,255]
+        elif colour_name == "black":
+                return [0,0,0]
         else :
              # Check if this is no light or black lol 
              return [0,0,0]
@@ -131,14 +156,13 @@ class IllumPublisher(object):
     # Searching for Song Lights 
     # Genre Specific Lights
     def set_new_light_mods(self):
-        colours = ["red","blue","green","yellow","orange","pink","purple"]
         self.next_lights = random.randint(0,1)
-        color1 = random.randint(0,6)
-        color2 = random.randint(0,6)
-        self.color1 = colours[color1]
-        self.color2 = colours[color2]
+        len_of_colours = len(self.colours) - 1
+        color1 = random.randint(0,len_of_colours)
+        color2 = random.randint(0,len_of_colours)
+        self.color1 = self.colours[color1]
+        self.color2 = self.colours[color2]
         
-
     def loop(self,t,t0):
         if self.tempo != 0.0:
             if self.next_lights == 0:

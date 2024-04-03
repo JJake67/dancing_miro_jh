@@ -250,25 +250,17 @@ class JointPublisher(object):
                 #print("head bop but not the real one")
 
         elif self.tempo != 0.0:
-            if self.num_of_joints == 2:
-                self.move_ears(t,t0,self.tempo*self.ear_modifier)
-                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
-            if self.num_of_joints == 4:
-                self.move_ears(t,t0,self.tempo*self.ear_modifier)
-                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
-                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
-                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
-            if self.num_of_joints == 6:  
-                self.move_ears(t,t0,self.tempo*self.ear_modifier)
-                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
-                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
-                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
-                self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
-                self.move_neck(t,t0,self.tempo*self.lift_modifier)
-                # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
-                if self.t_4bars <= t:
-                    self.t_4bars = t + (32*self.tempo)
-                    self.set_new_tempo_mods()
+            self.move_ears(t,t0,self.tempo*self.ear_modifier)
+            self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+            self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+            self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
+            self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
+            self.move_neck(t,t0,self.tempo*self.lift_modifier)
+            # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
+            
+            if self.t_4bars <= t:
+                self.t_4bars = t + (32*self.tempo)
+                self.set_new_tempo_mods()
             
             self.publish_cosmetics()
             self.publish_kinematics()
@@ -305,6 +297,22 @@ while not rospy.is_shutdown():
 
 
 """
+if self.num_of_joints == 2:
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+            if self.num_of_joints == 4:
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
+            if self.num_of_joints == 6:  
+                self.move_ears(t,t0,self.tempo*self.ear_modifier)
+                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier)
+                self.wag_tail(t,t0,self.tempo*self.tail_modifier)
+                self.move_eyes(t,t0,self.tempo*self.eye_modifier) 
+                self.move_head_pitch(t,t0,self.tempo*self.pitch_modifier)
+                self.move_neck(t,t0,self.tempo*self.lift_modifier)
+                # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
     # Cosmetic_joint_cmd.data : [tail (up/down), tail (left/right), eye, eye, ear, ear]
     
     # Kinematic_joint_cmd.data : [tilt, lift, yaw, pitch]

@@ -30,7 +30,7 @@ class estTempoAndBeats():
             path = rospack.get_path('diss')
             #full_path = os.path.realpath(__file__)
             #path, filename = os.path.split(full_path)
-            y, sr = librosa.load(path + 'src/data/miro_audio.wav')
+            y, sr = librosa.load(path + '/src/data/miro_audio.wav')
             hop_length = 512 
             print("here1")
             # Compute local onset autocorrelation

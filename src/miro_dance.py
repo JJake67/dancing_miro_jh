@@ -17,6 +17,8 @@ class MiroDance(object):
     def __init__(self,dance_mode):
         self.dance_mode = dance_mode
         self.ctrl_c = False
+        
+        self.genre_list = []
         self.genre = ""
         self.duration = 0.0 
         self.tempo = 0.0
@@ -82,8 +84,6 @@ class MiroDance(object):
             self.request_to_identify = SetBoolRequest()
             self.request_to_identify.data = True 
 
-
-
         # SUBSCRIBERS
 
         # PUBLISHERS
@@ -129,7 +129,7 @@ class MiroDance(object):
         result = get(url, headers=headers)
         json_result = json.loads(result.content)
         # Returns multiple, need to find way to differentiate as they're all kinda random
-        self.genre = json_result["genres"]
+        self.genre_list = json_result["genres"]
 
         # Audio Analysis
         url = f"https://api.spotify.com/v1/audio-analysis/{track_id}"
@@ -193,7 +193,7 @@ class MiroDance(object):
         message.tempo = self.tempo
         # Using Spotify Data
         if value == True:
-            message.move_name = self.body_dance_move
+            message.move_name = self.genre
         # Auto Mode
         else:
             message.move_name = ""
@@ -222,17 +222,17 @@ class MiroDance(object):
         # For Head Dance Move
         if self.genre == "pop":
             dances_for_genre = [0,2,3]
-            index = random.randint(0,len(dances_for_genre))
+            index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "soul":
             dances_for_genre = [0,3]
-            index = random.randint(0,len(dances_for_genre))
+            index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "metal":
             dances_for_genre = [1]
-            index = random.randint(0,len(dances_for_genre))
+            index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
         else:
             #Any move
@@ -246,10 +246,30 @@ class MiroDance(object):
         while beat_to_join < length_into_song + 0.1:
             beat_to_join = beat_to_join + ( 8 * self.beat_len)
         
-                        
         # Takes about 0.15 seconds to publish commands so send publish 0.1 seconds before actual beat
         length_to_sleep = beat_to_join - length_into_song - 0.1
         return length_to_sleep 
+
+    def decide_genre(self, list_of_genres):
+        self.genre = ""
+        for genre_name in list_of_genres:
+            if "soul" in genre_name:
+                self.genre = "soul"
+            if "pop" in genre_name:
+                self.genre = "pop"
+            if "rock" in genre_name:
+                self.genre = "rock"
+            if "metal" in genre_name:
+                self.genre = "metal"
+            if "blues" in genre_name:
+                self.genre = "blue"
+            if "classical" in genre_name:
+                self.genre = "classical"
+            if "electr" in genre_name:
+                self.genre = "electronic"
+            # If a genre has been found, doesn't need to iterate through the other genres
+            if self.genre != "":
+                break
 
     # MAIN PROGRAM LOOP 
     # ALL NEEDS REWORKING FOR DANCE_MODE 
