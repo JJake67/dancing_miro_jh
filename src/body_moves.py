@@ -25,9 +25,11 @@ from std_msgs.msg import (
     Float32MultiArray,
     UInt32MultiArray,
     UInt16,
+    UInt32
 )  # Used in callbacks
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
 from diss.msg import body
+import miro2 as miro
 #import miro2 as miro  # MiRo Developer Kit library
 """""
 try:  # For convenience, import this util separately
@@ -59,6 +61,13 @@ class BodyMoves(object):
             topic_root + "/control/cmd_vel", TwistStamped, queue_size=10
         )
         self.velocity = TwistStamped()
+
+        topic_name = topic_root + "/control/flags"
+        self.pub_flags = rospy.Publisher(topic_name, UInt32,queue_size = 0)
+        msg = UInt32()
+        msg.data = 0
+        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF_REFLEX
+        self.pub_flags.publish(msg)
 
         self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
         rospy.loginfo("Body Move node is active...")
@@ -158,7 +167,7 @@ class BodyMoves(object):
 
         while t0 < tFinal:
             self.velocity.twist.angular.z = 0
-            self.velocity.twist.linear.x = -0.05
+            self.velocity.twist.linear.x = 0.05
                 
             if t0 > tHalf:
                 self.velocity.twist.angular.z = 0
@@ -198,7 +207,11 @@ class BodyMoves(object):
 movement = BodyMoves()
 while not rospy.is_shutdown():
     #movement.rotate_m()
-    movement.loop()
+    movement.small_rotate_and_back(3)
+
+
+
+
     # Raghads VERSION !!!!
     """"def rotate(self):
         t0 = rospy.Time.now()
