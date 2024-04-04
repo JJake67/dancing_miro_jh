@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Pathing
+import rospkg
+
 # Detecting
 import os
 import numpy as np
@@ -41,11 +44,11 @@ class listen_and_record():
         topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
 
         # Service Node Setup 
-        service_name = "listen_and_record_music"
-        self.service = rospy.Service(service_name, SetBool, self.srv_callback)
+        #service_name = "listen_and_record_music"
+        #self.service = rospy.Service(service_name, SetBool, self.srv_callback)
         # save previous head data
         self.tmp = []
-        self.directory = os.getcwd()
+        #self.directory = os.getcwd()
         self.start_listening = False
         #Subscriber Node
         self.sub_mics = rospy.Subscriber(topic_base_name + "/sensors/mics",
@@ -71,7 +74,7 @@ class listen_and_record():
 
         # Create robot interface
 
-        self.record_now = True
+        self.record_now = False
         #self.micbuf = [np.zeros((0, 4), 'uint16')]
         self.micbuf = np.zeros((0, 4), 'uint16')
         self.outbuf = None
@@ -79,8 +82,8 @@ class listen_and_record():
         self.playchan = 0
         self.playsamp = 0
 
-        full_path = os.path.realpath(__file__)
-        path, filename = os.path.split(full_path)
+        rospack = rospkg.RosPack()
+        path = rospack.get_path('diss')
         self.directory = path
         #subscribers
         topic = topic_base_name + "/sensors/stream"
@@ -101,7 +104,7 @@ class listen_and_record():
         
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
 
-        self.music_start_time = 0.0
+        #self.music_start_time = 0.0
         print("Listen and Record Service Node now active ...")
            
     def callback_identify_mics(self, data):
@@ -166,22 +169,23 @@ class listen_and_record():
     ## RECORDING THE AUDIO FUNCTIONS ---------------------------------------------------------------
 
     def callback_stream(self, msg):
+        #print("this one")
         self.buffer_space = msg.data[0]
         self.buffer_total = msg.data[1]
         self.buffer_stuff = self.buffer_total - self.buffer_space
 
     def callback_record_mics(self, msg):
-
-        if self.start_listening == True:
-            if self.record_now == True:
+        #print("here?")
+        if self.start_listening:
+            if self.record_now:
                 if not self.micbuf is None:
 
                     # append mic data to store
                     self.micbuf = np.concatenate((self.micbuf, msg.data))
-
                     # report
                     sys.stdout.write(".")
                     sys.stdout.flush()
+
 
                     # finished recording?
                     if self.micbuf.shape[0] >= SAMPLE_COUNT:
@@ -241,12 +245,11 @@ class listen_and_record():
                 ## Print that a sound has been detected
                 print("Loud Signal Detected")
                 print("Recording...")
-                self.start_listening = True
-                self.music_start_time = rospy.get_time()
-                print(self.music_start_time)
                 self.record_now = True
+                self.start_listening = True
+                #self.music_start_time = rospy.get_time()
+                #print(self.music_start_time)
                 self.record_audio()
-                self.record_now = False
                 #rospy.sleep(5)
                 print("here?")
                 #clear the data collected when miro is turning
@@ -254,8 +257,8 @@ class listen_and_record():
                 self.status_code = 1
                 self.start_listening = False
                 response_from_server.success = True
-                response_from_server.message = str(self.music_start_time)
-
+                response_from_server.message = "0"
+                self.record_now = False
                 # Resets these two so that the service can be called again
                 self.micbuf = None
                 self.outbuf = None
@@ -266,7 +269,42 @@ class listen_and_record():
                 self.status_code = 1
     
     def loop(self):
-        rospy.spin()
+        #rospy.spin()
+        
+        self.status_code = 0
+        recording = False
+        while recording == False:
+            #print("looping")
+            if self.status_code == 1:
+                # Every once in a while, look for ball
+                self.voice_accident()
+
+            # Step 2. Orient towards it
+            elif self.status_code == 2:
+                ## Print that a sound has been detected
+                print("Loud Signal Detected")
+                print("Recording...")
+                self.record_now = True
+                self.start_listening = True
+                #self.music_start_time = rospy.get_time()
+                #print(self.music_start_time)
+                self.record_audio()
+                #rospy.sleep(5)
+                print("here?")
+                #clear the data collected when miro is turning
+                self.audio_event=[]
+                self.status_code = 1
+                self.start_listening = False
+                #response_from_server.success = True
+                #response_from_server.message = "0"
+                self.record_now = False
+                # Resets these two so that the service can be called again
+                self.micbuf = None
+                self.outbuf = None
+                recording = True
+            else:
+                self.status_code = 1
+    
 
 if __name__ == "__main__":
     rospy.init_node("listen_and_record", anonymous=True)

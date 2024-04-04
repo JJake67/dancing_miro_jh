@@ -1,4 +1,5 @@
-
+import random
+"""
 list_of_genres = ["electaronic","pop"]
 genre = ""
 
@@ -23,3 +24,15 @@ for genre_name in list_of_genres:
 
 print(genre)
 print(len(list_of_genres))
+
+"""
+head_move_names = ["head_bounce","head_bang","full_head_spin","head_bop"]
+print("pop picked")
+dances_for_genre = [0,1,2,3]
+index = random.randint(0,len(dances_for_genre))
+head_dance_move = head_move_names[index]
+for x in range(0,10):
+    index = random.randint(0,len(dances_for_genre)-1)
+    head_dance_move = head_move_names[index]
+    print(index)
+    print(head_dance_move)

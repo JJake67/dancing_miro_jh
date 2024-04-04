@@ -236,14 +236,14 @@ class JointPublisher(object):
 
     def loop(self,t,t0):
         if self.command != "":
-            print(self.command)
+            print(f"'{self.command}'")
             if self.command == "head_bounce":
                 self.soul_Head_Bounce(t,t0)
-            if self.command == "head_bang":
+            elif self.command == "head_bang":
                 self.head_Banging(t,t0)
-            if self.command == "full_head_spin":
+            elif self.command == "full_head_spin":
                 self.full_head_spin(t,t0)
-            if self.command == "head_bop":
+            elif self.command == "head_bop":
                 self.head_bop(t,t0)
             else:
                 self.head_bop(t,t0)

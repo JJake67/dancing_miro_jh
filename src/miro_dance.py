@@ -18,7 +18,7 @@ class MiroDance(object):
         self.dance_mode = dance_mode
         self.ctrl_c = False
         
-        self.genre_list = []
+        #self.genre_list = []   Dont think I'll need
         self.genre = ""
         self.duration = 0.0 
         self.tempo = 0.0
@@ -68,13 +68,13 @@ class MiroDance(object):
         self.request_to_record.data = True
         
         # ESTIMATE TEMPO 
-        #service_name = "estimate_tempo_and_beats"
-        #rospy.wait_for_service(service_name)
-        #self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
-
+        service_name = "estimate_tempo_and_beats"
+        rospy.wait_for_service(service_name)
+        self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
+        
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
-
+        
         if self.dance_mode == "Spotify":
             service_name = "identify_song"
 
@@ -83,7 +83,7 @@ class MiroDance(object):
 
             self.request_to_identify = SetBoolRequest()
             self.request_to_identify.data = True 
-
+        
         # SUBSCRIBERS
 
         # PUBLISHERS
@@ -129,7 +129,8 @@ class MiroDance(object):
         result = get(url, headers=headers)
         json_result = json.loads(result.content)
         # Returns multiple, need to find way to differentiate as they're all kinda random
-        self.genre_list = json_result["genres"]
+        genre_list = json_result["genres"]
+        self.genre = self.decide_genre(genre_list)
 
         # Audio Analysis
         url = f"https://api.spotify.com/v1/audio-analysis/{track_id}"
@@ -192,11 +193,7 @@ class MiroDance(object):
         message = lights()
         message.tempo = self.tempo
         # Using Spotify Data
-        if value == True:
-            message.move_name = self.genre
-        # Auto Mode
-        else:
-            message.move_name = ""
+        message.move_name = self.genre
 
         self.lightsPub.publish(message)
         rospy.sleep(0.05)
@@ -221,20 +218,24 @@ class MiroDance(object):
         # Base on genres: pop, rock, blues, metal, 
         # For Head Dance Move
         if self.genre == "pop":
-            dances_for_genre = [0,2,3]
+            print("pop picked")
+            dances_for_genre = [0,1,2,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "soul":
+            print("soul picked")
             dances_for_genre = [0,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
-        if self.genre == "metal":
+        if self.genre == "electronic":
+            print("metal picked")
             dances_for_genre = [1]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
         else:
+            print("random picked")
             #Any move
             index = random.randint(0,3)
             self.head_dance_move = self.head_move_names[index]
@@ -251,25 +252,26 @@ class MiroDance(object):
         return length_to_sleep 
 
     def decide_genre(self, list_of_genres):
-        self.genre = ""
+        genre = ""
         for genre_name in list_of_genres:
             if "soul" in genre_name:
-                self.genre = "soul"
+                genre = "soul"
             if "pop" in genre_name:
-                self.genre = "pop"
+                genre = "pop"
             if "rock" in genre_name:
-                self.genre = "rock"
+                genre = "rock"
             if "metal" in genre_name:
-                self.genre = "metal"
+                genre = "metal"
             if "blues" in genre_name:
-                self.genre = "blue"
+                genre = "blue"
             if "classical" in genre_name:
-                self.genre = "classical"
+                genre = "classical"
             if "electr" in genre_name:
-                self.genre = "electronic"
+                genre = "electronic"
             # If a genre has been found, doesn't need to iterate through the other genres
-            if self.genre != "":
+            if genre != "":
                 break
+        return genre
 
     # MAIN PROGRAM LOOP 
     # ALL NEEDS REWORKING FOR DANCE_MODE 
@@ -284,13 +286,15 @@ class MiroDance(object):
         # Calls service that records the MiRo's microphones when music is playing and
         # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
-        #music_start_time = float(response_listen_and_record.message)
+        if music_start_time == 0.0:
+            music_start_time = float(response_listen_and_record.message)
 
         # Calls service that estimates tempo (needed for auto mode) and the time 
         # of the last beat in the recording (needed for synchronisation)
-        #response_est_tempo = self.service_tempo(self.request_for_tempo)
-        #tempo_and_last_beat = response_est_tempo.message.split()
-        tempo_and_last_beat = 0 
+        response_est_tempo = self.service_tempo(self.request_for_tempo)
+        tempo_and_last_beat = response_est_tempo.message.split()
+        #tempo_and_last_beat = 0 
+
         # if dance_mode is Spotify, it will retrieve the tempo that way and 
         # likely be more accurate
         if self.dance_mode == "Auto":
@@ -325,10 +329,15 @@ class MiroDance(object):
             # Calls Spotify only once the song name has definitely been found
             self.set_track_data()
             self.beat_len = 60 / self.tempo
+        
+        #print("Connect your phone kind sir")
+        #rospy.sleep(7)
 
         # Test stuff -----
-        #self.song_name == "ARound the world - Daft Punk"
+        #self.song_name = "Deja Vu Beyonce"
         #self.set_track_data()
+        music_start_time = 0
+        #self.sections = [0,10,20,30,40,50,60,70,80]
         #self.tempo = 120
         # End of test stuff ---
 
@@ -340,19 +349,22 @@ class MiroDance(object):
         print(self.tempo)
         print(self.last_beat)
         print(self.sections)
+        print(self.genre)
         print("------------------------------------")
 
         start_time = rospy.get_time()
         dance_start_time = 0
         # Dancing State, repeats until the programmed is cancelled
         while not rospy.is_shutdown():
+            
             if dance_start_time == 0:
                 dance_start_time = float(rospy.get_time())
                 how_far_into_song = dance_start_time  + 5 - music_start_time
                 length_to_wait = self.length_to_wait(how_far_into_song)
                 print(length_to_wait)
-                rospy.sleep(length_to_wait)
-                print(f"the dance moves started {how_far_into_song} seconds after the song started")
+                #rospy.sleep(length_to_wait)
+                #print(f"the dance moves started {how_far_into_song} seconds after the song started")
+            
             # Two Scenarios 
             if self.dance_mode == "Auto":
                 self.publish_lights_cmd(False)
@@ -385,24 +397,24 @@ class MiroDance(object):
                         #current_time = rospy.get_time()-start_time
                 
                 #print("Song Over")
-            autoMode = False
+            
+            autoMode = True
             if self.dance_mode == "Spotify":
                 for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-start_time 
                     while current_time < self.sections[x]: 
-                        #print(autoMode)
                         self.publish_body_cmds(False)
-                        self.publish_head_cmd(False,6)
-                        #self.publish_head_cmd(autoMode,6)
-                        self.publish_lights_cmd(False)
+                        self.publish_head_cmd(autoMode,6)
+                        self.publish_lights_cmd(autoMode)
                         current_time = rospy.get_time()-start_time
-                        rospy.sleep(0.1)
+                        rospy.sleep(0.02)
                         
                     # Alternates between the auto kind of dancing
                     # and specific dance moves 
                     autoMode = not autoMode
                     # only changes the dance moves if they will be used 
                     # next iteration
+                    print(self.sections[x])
                     if autoMode == False:
                         print("swapping moves")
                         self.change_moves_around()

@@ -140,7 +140,7 @@ class IllumPublisher(object):
         colour1_rgb = self.get_rgbs(colour1)
         colour2_rgb = self.get_rgbs(colour2)
         color_change = UInt32MultiArray()
-        cur_command = self.command
+        cur_command = self.genre
 
         if self.flash:
             color = self.cvt_to_unsigned_int(colour1_rgb)

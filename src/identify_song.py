@@ -4,6 +4,7 @@ import rospy
 import os
 import asyncio
 import time
+import rospkg
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, SetBoolResponse
 from shazamio import Shazam
@@ -19,9 +20,9 @@ class identifySongService():
     rospy.loginfo(f"{service_name} Server is ready to be called")
 
   def srv_callback(self, request_from_client):
-    directory = os.getcwd()
-    full_path = os.path.realpath(__file__)
-    path, filename = os.path.split(full_path)
+    #directory = os.getcwd()
+    rospack = rospkg.RosPack()
+    path = rospack.get_path('diss')
     print(path)
     print("plz")
     response_from_server = SetBoolResponse()

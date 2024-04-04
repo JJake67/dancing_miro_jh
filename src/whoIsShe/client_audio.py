@@ -41,6 +41,7 @@ import os
 import numpy as np
 import wave, struct
 import pydub
+import rospkg
 
 import miro2 as miro
 
@@ -64,7 +65,7 @@ BUFFER_MAX = BUFFER_STUFF_SAMPLES + BUFFER_MARGIN
 BUFFER_MIN = BUFFER_STUFF_SAMPLES - BUFFER_MARGIN
 
 # how long to record before playing back in seconds?
-RECORD_TIME = 2
+RECORD_TIME = 5
 
 # microphone sample rate (also available at miro2.constants)
 MIC_SAMPLE_RATE = 20000
@@ -141,7 +142,9 @@ class client:
 		if self.mode == "record" or self.mode == "record4":
 
 			# write output file
-			outfilename = directory + "/data/miro_audio.wav"
+			rospack = rospkg.RosPack()
+			path = rospack.get_path('diss')
+			outfilename = path + "/data/miro_audio.wav"
 			file = wave.open(outfilename, 'w')
 
 			file.setsampwidth(2)
@@ -167,8 +170,8 @@ class client:
 			file.close()
 			# Converts from wav to mp3 for shazamio
 			print ("wrote output file at", outfilename)
-			sound = pydub.AudioSegment.from_wav("/home/student/mdk/bin/shared/tmp/client_audio.wav")
-			sound.export("/home/student/mdk/catkin_ws/src/spotify_API_Shazam/ShazamSpotifyAPI/data/miro_audio.mp3",format="mp3")
+			#sound = pydub.AudioSegment.from_wav("/home/student/mdk/bin/shared/tmp/client_audio.wav")
+			#sound.export("/home/student/mdk/catkin_ws/src/spotify_API_Shazam/ShazamSpotifyAPI/data/miro_audio.mp3",format="mp3")
 
 	def __init__(self, mode):
 

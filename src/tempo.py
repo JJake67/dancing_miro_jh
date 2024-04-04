@@ -25,12 +25,11 @@ class estTempoAndBeats():
         print("service called")
         response_from_server = SetBoolResponse()
         if request_from_client.data == True:
-            # NEED TO FIGURE OUT HOW TO FOLDER ROUTE 
+
             rospack = rospkg.RosPack()
             path = rospack.get_path('diss')
-            #full_path = os.path.realpath(__file__)
-            #path, filename = os.path.split(full_path)
-            y, sr = librosa.load(path + '/src/data/miro_audio.wav')
+
+            y, sr = librosa.load(path + '/data/miro_audio.wav')
             hop_length = 512 
             print("here1")
             # Compute local onset autocorrelation
@@ -38,10 +37,10 @@ class estTempoAndBeats():
             times = librosa.times_like(oenv, sr=sr, hop_length=hop_length)
             print("here2")
             # Estimate the global tempo for display purposes
-            #tempo = librosa.beat.tempo(onset_envelope=oenv, sr=sr,
+            tempo = librosa.beat.tempo(onset_envelope=oenv, sr=sr,
+                                       hop_length=hop_length)[0]
+            #tempo = librosa.feature.tempo(onset_envelope=oenv, sr=sr,
             #                        hop_length=hop_length)[0]
-            tempo = librosa.feature.tempo(onset_envelope=oenv, sr=sr,
-                                    hop_length=hop_length)[0]
             print("here3")
             # Returns all the beats 
             tempo, beats = librosa.beat.beat_track(y=y,sr=sr)
@@ -61,3 +60,7 @@ class estTempoAndBeats():
 if __name__ == '__main__':
     server = estTempoAndBeats()
     server.main()
+
+# OLD PATHING 
+#full_path = os.path.realpath(__file__)
+#path, filename = os.path.split(full_path)
