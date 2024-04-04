@@ -28,14 +28,22 @@ class JointPublisher(object):
         self.head_pitch = 0.0
         self.neck_lift = 0.0
 
+        """
         self.ear_modifier = 1
         self.eye_modifier = 1
         self.tail_modifier = 1 
         self.lift_modifier = 1 
         self.yaw_modifier = 1 
         self.pitch_modifier = 1
-
-        self.t_4bars = 0.0
+        """ 
+        self.pitch_max = 0 
+        self.pitch_min = 0 
+        self.yaw_max = 0 
+        self.yaw_min = 0 
+        self.lift_max = 0
+        self.lift_min = 0 
+        
+        self.t_2bars = 0.0
         self.tempo = 0.0
         self.command = ""
 
@@ -115,17 +123,17 @@ class JointPublisher(object):
         self.tail = self.new_sine_generator(0.5,0.2,freq,0,t,t0)
 
     # YAW MAX = 0.95, MIN = -0.95 (RAD) MAX = 55, MIN = -55 (DEG) 
-    def move_head_yaw(self,t,t0,freq, max, min):
-        self.head_yaw = self.new_sine_generator(max,min,freq,0,t,t0)
+    def move_head_yaw(self,t,t0,freq, y_max, y_min):
+        self.head_yaw = self.new_sine_generator(y_max,y_min,freq,0,t,t0)
         print(self.head_yaw)
 
     # PITCH MAX = 0.14, MIN = -0.38 (RAD) MAX = 8, MIN = 22 (DEG)
-    def move_head_pitch(self,t,t0,freq):
-        self.head_pitch = self.new_sine_generator(0.14,-0.38,freq,0,t,t0)
+    def move_head_pitch(self,t,t0,freq,p_max,p_min):
+        self.head_pitch = self.new_sine_generator(p_max,p_min,freq,0,t,t0)
 
     # LIFT MAX = 1.04, MIN = 0.14 (RAD) MAX = 60, MIN = 8 (DEG)
-    def move_neck(self,t,t0,freq):
-        self.neck_lift = self.new_sine_generator(1.04,0.14,freq,0,t,t0)
+    def move_neck(self,t,t0,freq,l_max,l_min):
+        self.neck_lift = self.new_sine_generator(l_max,l_min,freq,0,t,t0)
 
     # Cosmetic Publisher controls the tail, eyes and ears
     def publish_cosmetics(self):
@@ -239,6 +247,96 @@ class JointPublisher(object):
         print("new ones set to...")
         print(f"ears:{self.ear_modifier}, eyes:{self.eye_modifier}, yaw:{self.yaw_modifier}")
 
+    def change_lift_values(self):
+        # MAX = 1.04 and MIN = 0.14 but random can only get a random integer
+        joint_min = 14
+        joint_max = 104
+        joint_range = abs(joint_max)+abs(joint_min)
+        new_joint_min = 0 
+        new_joint_max = 0 
+        if self.tempo > 120:
+            # FAST SONG, so uses a 1/3 of the range of motion in wave
+            joint_range = joint_range - int(joint_range / 3)
+            new_joint_min = random.randint(0,joint_range)- (joint_range/3)
+            new_joint_max = new_joint_min + int(joint_range / 3)
+
+            self.lift_min = float(new_joint_min/100)
+            self.lift_max = float(new_joint_max/100)
+        if self.tempo > 80:
+            # MED SONG, uses 1/2 of the range 
+            joint_range = joint_range - int(joint_range / 2)
+            new_joint_min = random.randint(0,joint_range) - int(joint_range/2)
+            new_joint_max = new_joint_min + int(joint_range / 2)
+
+            self.lift_min = float(new_joint_min/100)
+            self.lift_max = float(new_joint_max/100)
+            # THESE WILL PROBABLY NEED TO BE SELF. VALUES
+        else:
+            # SLOW SONG, uses full range
+            # DONT EVEN KNOW IF I NEED THESE LINES
+            self.lift_min = joint_min
+            self.lift_max = joint_max
+
+    def change_pitch_values(self):
+        # MAX = 0.14 and MIN = -0.38 but random can only get a random integer
+        joint_min = -38
+        joint_max = 14
+        joint_range = abs(joint_max)+abs(joint_min)
+        new_joint_min = 0 
+        new_joint_max = 0 
+        if self.tempo > 120:
+            # FAST SONG, so uses a 1/3 of the range of motion in wave
+            joint_range = joint_range - int(joint_range / 3)
+            new_joint_min = random.randint(0,joint_range)- (joint_range/3)
+            new_joint_max = new_joint_min + int(joint_range / 3)
+
+            self.pitch_min = float(new_joint_min/100)
+            self.pitch_max = float(new_joint_max/100)
+        if self.tempo > 80:
+            # MED SONG, uses 1/2 of the range 
+            joint_range = joint_range - int(joint_range / 2)
+            new_joint_min = random.randint(0,joint_range) - int(joint_range/2)
+            new_joint_max = new_joint_min + int(joint_range / 2)
+
+            self.pitch_min = float(new_joint_min/100)
+            self.pitch_max = float(new_joint_max/100)
+            # THESE WILL PROBABLY NEED TO BE SELF. VALUES
+        else:
+            # SLOW SONG, uses full range
+            # DONT EVEN KNOW IF I NEED THESE LINES
+            self.pitch_min = joint_min
+            self.pitch_max = joint_max
+    
+    def change_yaw_values(self):
+        # MAX = 0.95 and MIN = -0.95 but random can only get a random integer
+        joint_min = -95
+        joint_max = 95
+        joint_range = abs(joint_max)+abs(joint_min)
+        new_joint_min = 0 
+        new_joint_max = 0 
+        if self.tempo > 120:
+            # FAST SONG, so uses a 1/3 of the range of motion in wave
+            joint_range = joint_range - int(joint_range / 3)
+            new_joint_min = random.randint(0,joint_range)- (joint_range/3)
+            new_joint_max = new_joint_min + int(joint_range / 3)
+
+            self.yaw_min = float(new_joint_min/100)
+            self.yaw_max = float(new_joint_max/100)
+        if self.tempo > 80:
+            # MED SONG, uses 1/2 of the range 
+            joint_range = joint_range - int(joint_range / 2)
+            new_joint_min = random.randint(0,joint_range) - int(joint_range/2)
+            new_joint_max = new_joint_min + int(joint_range / 2)
+
+            self.yaw_min = float(new_joint_min/100)
+            self.yaw_max = float(new_joint_max/100)
+            # THESE WILL PROBABLY NEED TO BE SELF. VALUES
+        else:
+            # SLOW SONG, uses full range
+            # DONT EVEN KNOW IF I NEED THESE LINES
+            self.yaw_min = joint_min
+            self.yaw_max = joint_max
+
     def loop(self,t,t0):
 
         # Specific Dance Move
@@ -259,11 +357,31 @@ class JointPublisher(object):
         # General Dancing 
         
         elif self.tempo != 0.0:
-            
-            if t < t0 + (16/3):
-                self.move_head_yaw(t,t0,self.tempo,0.9,0.0)
-            else:
-                self.move_head_yaw(t,t0,self.tempo,0.0,-0.9)
+            joint_chooser = 0 
+            while self.command == "" and self.tempo != 0.0:
+
+                # Every 2 bars, switch one of them up by the max / min 
+                if self.t_2bars <= t:
+                    self.t_2bars = t + (16*self.tempo)
+                    if joint_chooser == 0:
+                        self.change_yaw_values()
+                    elif joint_chooser == 1:
+                         self.change_pitch_values()
+                    elif joint_chooser == 2:
+                        self.change_lift_values()
+                        joint_chooser = 0
+
+                # Publish Yaw / Pitch / Lift Commands
+                self.move_head_pitch(t,t0,self.tempo,self.pitch_max,self.pitch_min)
+                self.move_neck(t,t0,self.tempo,self.lift_max,self.lift_min)
+                self.move_head_yaw(t,t0,self.tempo,self.yaw_max,self.yaw_min)
+                rospy.sleep(0.02)
+                    
+
+            #if t < t0 + (16/3):
+            #    self.move_head_yaw(t,t0,self.tempo,0.9,0.0)
+            #else:
+            #    self.move_head_yaw(t,t0,self.tempo,0.0,-0.9)
 
             #self.move_head_yaw(t,t0,self.tempo,0.95,-0.95)
             #self.move_ears(t,t0,self.tempo*2)
