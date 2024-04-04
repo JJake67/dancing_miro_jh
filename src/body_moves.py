@@ -207,7 +207,7 @@ class BodyMoves(object):
 movement = BodyMoves()
 while not rospy.is_shutdown():
     #movement.rotate_m()
-    movement.small_rotate_and_back(3)
+    movement.loop()
 
 
 
