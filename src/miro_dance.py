@@ -25,7 +25,7 @@ class MiroDance(object):
         self.beat_len = 0.0
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
-
+        self.dance_start_time = 0
         self.bars = []
         self.sections = [] 
         
@@ -40,7 +40,6 @@ class MiroDance(object):
         self.head_move_names = ["head_bounce","head_bang","full_head_spin","head_bop"]
         self.body_dance_move = ""
         self.lights_move = ""
-        #self.lights_colours = ""
 
         # Audio Features 
         self.danceability = 0.0
@@ -52,22 +51,22 @@ class MiroDance(object):
         
         # SERVICES
         
-        ##UNCOMMENT FOR LISTEN_AND_RECORD
+        ## LOCALISE SOUND SERVICE
         service_name = "point_to_sound"
 
         rospy.wait_for_service(service_name)
         self.service_localise_MiRo = rospy.ServiceProxy(service_name, SetBool)
         self.request_to_localise = True
 
+        # RECORD MIRO AUDIO SERVICE
         service_name = "listen_and_record_music"
-
         rospy.wait_for_service(service_name)
         self.service_record = rospy.ServiceProxy(service_name,SetBool)
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
         
-        # ESTIMATE TEMPO 
+        # ESTIMATE TEMPO SERVICE
         service_name = "estimate_tempo_and_beats"
         rospy.wait_for_service(service_name)
         self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
@@ -75,6 +74,7 @@ class MiroDance(object):
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
         
+        # IDENTIFY SONG SHAZAM SERVICE
         if self.dance_mode == "Spotify":
             service_name = "identify_song"
 
@@ -84,8 +84,6 @@ class MiroDance(object):
             self.request_to_identify = SetBoolRequest()
             self.request_to_identify.data = True 
         
-        # SUBSCRIBERS
-
         # PUBLISHERS
         # body_msg : body movements
         topic_name = "body_topic"
@@ -273,21 +271,19 @@ class MiroDance(object):
                 break
         return genre
 
-    # MAIN PROGRAM LOOP 
-    # ALL NEEDS REWORKING FOR DANCE_MODE 
-    def loop(self):
+    def pre_dance_processes(self):
         # Identify Song
         print("Play Music Now")
         
         # Calls service that gets MiRo to face the source of the sound 
         response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
-        music_start_time = float(response_point_to_sound.message)
+        self.music_start_time = float(response_point_to_sound.message)
         
         # Calls service that records the MiRo's microphones when music is playing and
         # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
-        if music_start_time == 0.0:
-            music_start_time = float(response_listen_and_record.message)
+        if self.music_start_time == 0.0:
+            self.music_start_time = float(response_listen_and_record.message)
 
         # Calls service that estimates tempo (needed for auto mode) and the time 
         # of the last beat in the recording (needed for synchronisation)
@@ -330,83 +326,46 @@ class MiroDance(object):
             self.set_track_data()
             self.beat_len = 60 / self.tempo
         
-        #print("Connect your phone kind sir")
-        #rospy.sleep(7)
-
-        # Test stuff -----
-        #self.song_name = "Deja Vu Beyonce"
-        #self.set_track_data()
-        music_start_time = 0
-        #self.sections = [0,10,20,30,40,50,60,70,80]
-        #self.tempo = 120
-        # End of test stuff ---
-
-        self.beat_len = 60 / self.tempo
-        # avg song length in beats
-        print("SONG INFO") # For My Own Sake 
-        print("------------------------------------")
-        print(self.song_name)
-        print(self.tempo)
-        print(self.last_beat)
-        print(self.sections)
-        print(self.genre)
-        print("------------------------------------")
-
-        start_time = rospy.get_time()
-        dance_start_time = 0
-        # Dancing State, repeats until the programmed is cancelled
+    # MAIN PROGRAM LOOP 
+    def loop(self):
+        # Enter Dancing State
         while not rospy.is_shutdown():
+            self.pre_dance_processes()
+            # Test stuff -----
+            #self.song_name = "Deja Vu Beyonce"
+            #self.set_track_data()
+            #music_start_time = 0
+            #self.sections = [0,10,20,30,40,50,60,70,80]
+            #self.beat_len = 60 / self.tempo
+            #self.tempo = 120
+            # End of test stuff ---
+
+            dance_start_time = float(rospy.get_time())
+            how_far_into_song = dance_start_time  + 5 - self.music_start_time
+            length_to_wait = self.length_to_wait(how_far_into_song)
+            print(length_to_wait)
+            rospy.sleep(length_to_wait)
+            print(f"the dance moves started {how_far_into_song} seconds after the song started")
             
-            if dance_start_time == 0:
-                dance_start_time = float(rospy.get_time())
-                how_far_into_song = dance_start_time  + 5 - music_start_time
-                length_to_wait = self.length_to_wait(how_far_into_song)
-                print(length_to_wait)
-                #rospy.sleep(length_to_wait)
-                #print(f"the dance moves started {how_far_into_song} seconds after the song started")
-            
-            # Two Scenarios 
+            # Two Scenarios           
             if self.dance_mode == "Auto":
-                self.publish_lights_cmd(False)
-                self.publish_body_cmds(False)
-                self.publish_head_cmd(False,6) 
+                # Assumes the song is 2 minutes long so the dancing will stop 
+                while current_time < 120:
+                    self.publish_lights_cmd(False)
+                    self.publish_body_cmds(False)
+                    self.publish_head_cmd(False,6) 
+                    current_time = rospy.get_time() - self.music_start_time
+                    rospy.sleep(0.02)
 
-                rospy.sleep(0.02)
-
-
-                # Gives the impression that the dancing
-                # is building as song progresses
-                # Might be too much
-                #for x in range(0,len(beats_array)):
-                #    current_time = rospy.get_time()-start_time
-                #    while current_time < beats_array[x]:
-
-                        #if x == 0:
-                        #    self.publish_head_cmd(False,2)
-                        #elif x == 1:
-                        #    self.publish_head_cmd(False,4)
-                        #    self.publish_lights_cmd(False)
-                        #elif x == 2:
-                        #    self.publish_head_cmd(False,6)
-                        #    self.publish_lights_cmd(False)
-                        #elif x == 3:
-                        #    self.publish_head_cmd(False,6)
-                        #    self.publish_lights_cmd(False)
-                        #    self.publish_body_cmds(False)
-
-                        #current_time = rospy.get_time()-start_time
-                
-                #print("Song Over")
-            
-            autoMode = True
-            if self.dance_mode == "Spotify":
+            if self.dance_mode == "Spotify":    
+                autoMode = True
                 for x in range(0,len(self.sections)):
-                    current_time = rospy.get_time()-start_time 
+                    current_time = rospy.get_time()-self.music_start_time
                     while current_time < self.sections[x]: 
                         self.publish_body_cmds(False)
                         self.publish_head_cmd(autoMode,6)
                         self.publish_lights_cmd(autoMode)
-                        current_time = rospy.get_time()-start_time
+                        current_time = rospy.get_time()-self.music_start_time
                         rospy.sleep(0.02)
                         
                     # Alternates between the auto kind of dancing
@@ -419,6 +378,15 @@ class MiroDance(object):
                         print("swapping moves")
                         self.change_moves_around()
                         print(self.head_dance_move)
+                
+            # Song ended
+            print("The current song has ended")
+            print("--------------------------")
+            print("Restarting for next song...")
+
+            # Reset any values that need to be reset before doing another song
+            self.music_start_time = 0 
+
         
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)

@@ -58,6 +58,8 @@ class IllumPublisher(object):
             self.colours = ["black","white"]
         elif self.genre == "classical":
             self.colours = ["yellow","orange","white"]
+        else:
+            self.colours =["red","blue","orange","yellow","purple","green"]
 
     def get_rgbs(self, colour_name):
         if colour_name == "red":
