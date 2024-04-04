@@ -1,4 +1,20 @@
 import random
+import numpy as np
+
+
+
+def sine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
+    return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
+
+def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
+    return ((mx-mn)) * (freq/math.pi)* (np.sin(freq*(t-t0) + phase) / 2) + (mx - ((mx-mn)/2)) 
+
+freq = 
+head_yaw = sine_generator(20,10,freq,0,5,2)
+new_head_yaw = new_sine_generator(20,10,freq,0,5,2)
+
+print(head_yaw)
+print(new_head_yaw)
 """
 list_of_genres = ["electaronic","pop"]
 genre = ""
@@ -25,7 +41,7 @@ for genre_name in list_of_genres:
 print(genre)
 print(len(list_of_genres))
 
-"""
+
 head_move_names = ["head_bounce","head_bang","full_head_spin","head_bop"]
 print("pop picked")
 dances_for_genre = [0,1,2,3]
@@ -36,3 +52,4 @@ for x in range(0,10):
     head_dance_move = head_move_names[index]
     print(index)
     print(head_dance_move)
+"""

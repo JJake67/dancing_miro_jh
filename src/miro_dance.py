@@ -25,7 +25,7 @@ class MiroDance(object):
         self.beat_len = 0.0
         self.end_of_fade_in = 0.0
         self.track_start = 0.0
-        self.dance_start_time = 0
+        self.music_start_time = 0
         self.bars = []
         self.sections = [] 
         
@@ -50,7 +50,6 @@ class MiroDance(object):
         self.client_secret = "a35830533528441f9ae304893a279b38"
         
         # SERVICES
-        
         ## LOCALISE SOUND SERVICE
         service_name = "point_to_sound"
 
@@ -58,6 +57,7 @@ class MiroDance(object):
         self.service_localise_MiRo = rospy.ServiceProxy(service_name, SetBool)
         self.request_to_localise = True
 
+        print("yellow")
         # RECORD MIRO AUDIO SERVICE
         service_name = "listen_and_record_music"
         rospy.wait_for_service(service_name)
@@ -65,6 +65,7 @@ class MiroDance(object):
         
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
+        #print("Yellow")
         
         # ESTIMATE TEMPO SERVICE
         service_name = "estimate_tempo_and_beats"
@@ -73,7 +74,7 @@ class MiroDance(object):
         
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
-        
+        #print("yellow")
         # IDENTIFY SONG SHAZAM SERVICE
         if self.dance_mode == "Spotify":
             service_name = "identify_song"
@@ -333,26 +334,30 @@ class MiroDance(object):
             self.pre_dance_processes()
             # Test stuff -----
             #self.song_name = "Deja Vu Beyonce"
+            #print("Setting Track Data PLUGGG!!!!")
+            #rospy.sleep(5)
             #self.set_track_data()
-            #music_start_time = 0
+            self.music_start_time = rospy.get_time()
             #self.sections = [0,10,20,30,40,50,60,70,80]
             #self.beat_len = 60 / self.tempo
             #self.tempo = 120
             # End of test stuff ---
 
-            dance_start_time = float(rospy.get_time())
-            how_far_into_song = dance_start_time  + 5 - self.music_start_time
-            length_to_wait = self.length_to_wait(how_far_into_song)
-            print(length_to_wait)
-            rospy.sleep(length_to_wait)
-            print(f"the dance moves started {how_far_into_song} seconds after the song started")
+            #dance_start_time = float(rospy.get_time())
+            #how_far_into_song = dance_start_time  + 5 - self.music_start_time
+            #length_to_wait = self.length_to_wait(how_far_into_song)
+            #print(length_to_wait)
+            #rospy.sleep(length_to_wait)
+            #print(f"the dance moves started {how_far_into_song} seconds after the song started")
             
-            # Two Scenarios           
+            # Two Scenarios   
+            # s        
             if self.dance_mode == "Auto":
+                current_time = rospy.get_time() - self.music_start_time
                 # Assumes the song is 2 minutes long so the dancing will stop 
                 while current_time < 120:
                     self.publish_lights_cmd(False)
-                    self.publish_body_cmds(False)
+                    #self.publish_body_cmds(False)
                     self.publish_head_cmd(False,6) 
                     current_time = rospy.get_time() - self.music_start_time
                     rospy.sleep(0.02)
@@ -400,6 +405,7 @@ if __name__ == "__main__":
     else: 
         print("No valid input, going into auto mode")
         dance_mode = "Auto"
+    rospy.sleep(1)
     main = MiroDance(dance_mode)
     main.loop()
 

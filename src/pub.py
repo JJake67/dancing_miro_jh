@@ -4,6 +4,7 @@ import time
 import rospy            # ROS Python interface
 import numpy as np
 import random
+import math
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import UInt32MultiArray, String
@@ -95,7 +96,7 @@ class JointPublisher(object):
         return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
-        return ((mx-mn)) * (np.sin(freq*(t-t0) + phase) / 2) + (mx - ((mx-mn)/2)) 
+        return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi) / 2) + (mx - ((mx-mn)/2)) 
 
     def cosine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.cos (freq*(t-t0) + phase) / 2.0 + offset)
@@ -113,14 +114,18 @@ class JointPublisher(object):
     def wag_tail(self,t,t0,freq):
         self.tail = self.new_sine_generator(0.5,0.2,freq,0,t,t0)
 
-    def move_head_yaw(self,t,t0,freq):
-        self.head_yaw = self.new_sine_generator(15,-15,freq,0,t,t0)
+    # YAW MAX = 0.95, MIN = -0.95 (RAD) MAX = 55, MIN = -55 (DEG) 
+    def move_head_yaw(self,t,t0,freq, max, min):
+        self.head_yaw = self.new_sine_generator(max,min,freq,0,t,t0)
+        print(self.head_yaw)
 
+    # PITCH MAX = 0.14, MIN = -0.38 (RAD) MAX = 8, MIN = 22 (DEG)
     def move_head_pitch(self,t,t0,freq):
-        self.head_pitch = self.new_sine_generator(8,-22,freq,0,t,t0)
+        self.head_pitch = self.new_sine_generator(0.14,-0.38,freq,0,t,t0)
 
+    # LIFT MAX = 1.04, MIN = 0.14 (RAD) MAX = 60, MIN = 8 (DEG)
     def move_neck(self,t,t0,freq):
-        self.neck_lift = self.new_sine_generator(8,-22,freq,0,t,t0)
+        self.neck_lift = self.new_sine_generator(1.04,0.14,freq,0,t,t0)
 
     # Cosmetic Publisher controls the tail, eyes and ears
     def publish_cosmetics(self):
@@ -252,13 +257,20 @@ class JointPublisher(object):
                 #print("head bop but not the real one")
 
         # General Dancing 
+        
         elif self.tempo != 0.0:
-            self.move_ears(t,t0,self.tempo*2)
-            self.move_head_yaw(t,t0,self.tempo)
-            self.wag_tail(t,t0,self.tempo*2)
-            self.move_eyes(t,t0,self.tempo) 
-            self.move_head_pitch(t,t0,self.tempo)
-            self.move_neck(t,t0,self.tempo*0.5)
+            
+            if t < t0 + (16/3):
+                self.move_head_yaw(t,t0,self.tempo,0.9,0.0)
+            else:
+                self.move_head_yaw(t,t0,self.tempo,0.0,-0.9)
+
+            #self.move_head_yaw(t,t0,self.tempo,0.95,-0.95)
+            #self.move_ears(t,t0,self.tempo*2)
+            #self.wag_tail(t,t0,self.tempo*2)
+            #self.move_eyes(t,t0,self.tempo) 
+            #self.move_head_pitch(t,t0,self.tempo)
+            #self.move_neck(t,t0,self.tempo)
             # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
             
             #if self.t_4bars <= t:
@@ -272,6 +284,10 @@ class JointPublisher(object):
 
 movement = JointPublisher()
 t0 = rospy.get_time()
+# tempo = 20 = 180bpm coz 180 / 3 = 60 dont ask please
+# tempo = 60 = 60 bpm 
+
+#movement.tempo = 60 / 60 
 while not rospy.is_shutdown():
     t = rospy.get_time() 
     movement.loop(t,t0)

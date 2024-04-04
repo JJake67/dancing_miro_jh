@@ -44,8 +44,8 @@ class listen_and_record():
         topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
 
         # Service Node Setup 
-        #service_name = "listen_and_record_music"
-        #self.service = rospy.Service(service_name, SetBool, self.srv_callback)
+        service_name = "listen_and_record_music"
+        self.service = rospy.Service(service_name, SetBool, self.srv_callback)
         # save previous head data
         self.tmp = []
         #self.directory = os.getcwd()
@@ -108,30 +108,30 @@ class listen_and_record():
     def callback_identify_mics(self, data):
         # data for angular calculation
         # TRY WITHOUT THIS IF IT DOESNT WORK
-        if self.start_listening == False:
-            self.audio_event = AudioEng.process_data(data.data)
+        
+        self.audio_event = AudioEng.process_data(data.data)
 
-            # data for dynamic thresholding
-            data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
-            data_t = data_t.reshape((4, 500))  
-            self.head_data = data_t[2][:]
-            if self.tmp is None:
-                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-            elif (len(self.tmp)<10500):
-                self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
-            else:
-                # when the buffer is 
-                self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
-                # dynamic threshold is calculated and updated when new signal come
-                self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
+        # data for dynamic thresholding
+        data_t = np.asarray(data.data, 'float32') * (1.0 / 32768.0) #normalize the high amplitude 
+        data_t = data_t.reshape((4, 500))  
+        self.head_data = data_t[2][:]
+        if self.tmp is None:
+            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+        elif (len(self.tmp)<10500):
+            self.tmp = np.hstack((self.tmp, np.abs(self.head_data)))
+        else:
+            # when the buffer is 
+            self.tmp = np.hstack((self.tmp[-10000:], np.abs(self.head_data)))
+            # dynamic threshold is calculated and updated when new signal come
+            self.thresh = self.thresh_min + AudioEng.non_silence_thresh(self.tmp)
 
-            # data for display
-            data = np.asarray(data.data)
-            # 500 samples from each mics
-            data = np.transpose(data.reshape((self.no_of_mics, 500)))
-            data = np.flipud(data)
-            #self.record_mics(data)  
-            self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
+        # data for display
+        data = np.asarray(data.data)
+        # 500 samples from each mics
+        data = np.transpose(data.reshape((self.no_of_mics, 500)))
+        data = np.flipud(data)
+        #self.record_mics(data)  
+        self.input_mics = np.vstack((data, self.input_mics[:self.x_len-500,:]))
 
     def voice_accident(self):
         m = 0.00

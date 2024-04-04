@@ -166,11 +166,11 @@ class BodyMoves(object):
         ang_vel = (2 / spin_length) * (math.pi/4)
 
         while t0 < tFinal:
-            self.velocity.twist.angular.z = 0
-            self.velocity.twist.linear.x = 0.05
+            self.velocity.twist.angular.z = ang_vel
+            self.velocity.twist.linear.x = -0.05
                 
             if t0 > tHalf:
-                self.velocity.twist.angular.z = 0
+                self.velocity.twist.angular.z = ang_vel
                 self.velocity.twist.linear.x = 0.05
 
             self.pub_cmd_vel.publish(self.velocity)

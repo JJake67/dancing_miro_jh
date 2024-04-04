@@ -21,6 +21,7 @@ class IllumPublisher(object):
         self.colours = []
         self.color1 = "red"
         self.color2 = "blue"
+        self.colours = ["red","blue","orange","yellow","purple","green"]
         self.next_lights = 0
 
         # Subscribers and Publishers
