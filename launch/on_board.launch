@@ -1,4 +1,0 @@
-<launch> 
-    <node pkg = "dancing_miro" type = "identify_song.py" name = "identify_song" output = "screen" >
-    </node>
-</launch>

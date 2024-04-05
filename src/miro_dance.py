@@ -302,6 +302,7 @@ class MiroDance(object):
             # Assumes the avg song is 3 minutes long
             avg_song_len  = 180/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
+            print("here??")
 
         #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         
@@ -331,7 +332,7 @@ class MiroDance(object):
     def loop(self):
         # Enter Dancing State
         while not rospy.is_shutdown():
-            self.pre_dance_processes()
+            #self.pre_dance_processes()
             # Test stuff -----
             #self.song_name = "Deja Vu Beyonce"
             #print("Setting Track Data PLUGGG!!!!")
@@ -340,7 +341,7 @@ class MiroDance(object):
             self.music_start_time = rospy.get_time()
             #self.sections = [0,10,20,30,40,50,60,70,80]
             #self.beat_len = 60 / self.tempo
-            #self.tempo = 120
+            self.tempo = 76
             # End of test stuff ---
 
             #dance_start_time = float(rospy.get_time())
@@ -354,6 +355,7 @@ class MiroDance(object):
             # s        
             if self.dance_mode == "Auto":
                 current_time = rospy.get_time() - self.music_start_time
+                print(current_time)
                 # Assumes the song is 2 minutes long so the dancing will stop 
                 while current_time < 120:
                     self.publish_lights_cmd(False)

@@ -31,17 +31,16 @@ class estTempoAndBeats():
 
             y, sr = librosa.load(path + '/data/miro_audio.wav')
             hop_length = 512 
-            print("here1")
             # Compute local onset autocorrelation
             oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
             times = librosa.times_like(oenv, sr=sr, hop_length=hop_length)
-            print("here2")
+
             # Estimate the global tempo for display purposes
             tempo = librosa.beat.tempo(onset_envelope=oenv, sr=sr,
                                        hop_length=hop_length)[0]
             #tempo = librosa.feature.tempo(onset_envelope=oenv, sr=sr,
             #                        hop_length=hop_length)[0]
-            print("here3")
+
             # Returns all the beats 
             tempo, beats = librosa.beat.beat_track(y=y,sr=sr)
             # Returns the time stamp of each beat

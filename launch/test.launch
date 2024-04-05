@@ -1,6 +1,0 @@
-<launch> 
-    <node pkg = "dancing_miro" type = "client_audio.py" name = "save_mp3" output = "screen" >
-    </node>
-    <node pkg = "dancing_miro" type = "point_to_sound.py" name = "point_to_sound" output = "screen">
-    </node>
-</launch>

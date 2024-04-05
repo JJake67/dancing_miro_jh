@@ -102,7 +102,7 @@ class listen_and_record():
         
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
 
-        #self.music_start_time = 0.0
+        self.music_start_time = 0.0
         print("Listen and Record Service Node now active ...")
            
     def callback_identify_mics(self, data):
@@ -235,7 +235,7 @@ class listen_and_record():
                 print("Recording...")
                 self.record_now = True
                 self.start_listening = True
-                #self.music_start_time = rospy.get_time()
+                self.music_start_time = rospy.get_time()
                 #print(self.music_start_time)
                 self.record_audio()
                 #rospy.sleep(5)
@@ -245,7 +245,7 @@ class listen_and_record():
                 self.status_code = 1
                 self.start_listening = False
                 response_from_server.success = True
-                response_from_server.message = "0"
+                response_from_server.message = str(self.music_start_time)
                 self.record_now = False
                 # Resets these two so that the service can be called again
                 self.micbuf = None

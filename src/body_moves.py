@@ -66,7 +66,7 @@ class BodyMoves(object):
         self.pub_flags = rospy.Publisher(topic_name, UInt32,queue_size = 0)
         msg = UInt32()
         msg.data = 0
-        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF_REFLEX
+        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF
         self.pub_flags.publish(msg)
 
         self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
@@ -166,11 +166,11 @@ class BodyMoves(object):
         ang_vel = (2 / spin_length) * (math.pi/4)
 
         while t0 < tFinal:
-            self.velocity.twist.angular.z = ang_vel
+            self.velocity.twist.angular.z = 0.2
             self.velocity.twist.linear.x = -0.05
                 
             if t0 > tHalf:
-                self.velocity.twist.angular.z = ang_vel
+                self.velocity.twist.angular.z = 0.2
                 self.velocity.twist.linear.x = 0.05
 
             self.pub_cmd_vel.publish(self.velocity)
