@@ -17,25 +17,17 @@ class JointPublisher(object):
         self.topic_base_name = "/" + os.getenv("MIRO_ROBOT_NAME")
 
         # Define Joint parameters for easier publishing together
+        # Cosmetic Joints 
         self.ear = 0.0
         self.eye = 0.0 
         self.tail = 0.0
-        self.num_of_joints = 6
 
-        self.harmonics = [0.5,1,2,1,2]
-        self.head_tilt = 0.0
+        # Kinematic Joints
         self.head_yaw = 0.0
         self.head_pitch = 0.0
         self.neck_lift = 0.0
 
-        """
-        self.ear_modifier = 1
-        self.eye_modifier = 1
-        self.tail_modifier = 1 
-        self.lift_modifier = 1 
-        self.yaw_modifier = 1 
-        self.pitch_modifier = 1
-        """ 
+        # Kinematic Variables
         self.pitch_max = 0.14
         self.pitch_min = -0.38
         self.pitch_phase = 0
@@ -55,9 +47,7 @@ class JointPublisher(object):
         self.tempo = 0.0
         self.command = ""
 
-        self.start = rospy.Time.now().to_sec()
-
-        # Publishers and Subscribers 
+        # Publishers
         self.kinematic_pub = rospy.Publisher(
             self.topic_base_name + "/control/kinematic_joints", JointState, queue_size=0
         )
@@ -65,67 +55,50 @@ class JointPublisher(object):
             self.topic_base_name + "/control/cosmetic_joints", Float32MultiArray, queue_size=0
         )
 
+        # Subscriber
         topic_name = "head_topic"
         self.sub = rospy.Subscriber(topic_name, head, self.cmd_callback)
-        
-        
-        rospy.loginfo("Head/Neck Moves node is active...")
-
+    
         # Defining joint commands
         self.kinematic_joint_cmd = JointState()
         self.kinematic_joint_cmd.position = [0, 0, 0, 0]
         self.cosmetic_joint_cmd = Float32MultiArray()   
         self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]
 
-    # Callback for when parameters are passed from Miro_Dance Node 
-    def cmd_callback(self,topic_message):
-        #print(f'Node obtained msg: {topic_message.move_name}')
-        #print(f'Node also said: {topic_message.mode}')
-        #print(topic_message.tempo)
+        rospy.loginfo("Head/Neck Moves node is active...")
+
+    # Callback for when subscriber to head_topic
+    # reads in parameters published from Miro_Dance Node
+    def cmd_callback(self,topic_message):  
         self.command = topic_message.move_name 
         if topic_message.tempo != 0:
+            # Tempo is used in terms of beats per second so it gets converted when it is passed
             self.tempo = 60 / topic_message.tempo
         else:
             self.tempo = 0
-        self.num_of_joints = topic_message.num_of_joints
     
-    # I DONT UNDERSTAND WHY THESE EXIST WHEN YOU CAN JUST WRITE THE COMMAND JUST AS EASILY
-    # movement for either tilt, lift, yaw or pitch
-    def set_move_kinematic(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
-        self.kinematic_joint_cmd.position = [tilt, lift, yaw, pitch]
-        self.kinematic_pub.publish(self.kinematic_joint_cmd)
-
-    # movement for the tail, eye lid, ears
-    def set_move_cosmetic(self, tail_pitch = 0, tail_yaw = 0, left_eye = 0, right_eye = 0, left_ear = 0, right_ear = 0):
-        self.cosmetic_joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
-        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
-
-    # Resets ears / eyes / tail to calibration(middle) settings
-    def set_move_cosmetic2(self):
-        self.cosmetic_joint_cmd = Float32MultiArray() 
-        # Puts them all to their default position I believe
-        self.data_calib = [0,0.5,0.5,0.5,0.33,0.33] 
-        self.cosmetic_joint_cmd.data = self.data_calib
-        #self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]
-            
-        #self.cosmetic_joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
-        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
-    
+    # V1: Used by the pre-programmed moves but is wrong :)
     def sine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
         return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
 
+    # Would be the same as using new_sine_generator with a phase of pi/2
     def cosine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
         return ((mx-mn) * np.cos (freq*(t-t0) + phase) / 2.0 + offset)
 
-    # Ears limits are mx = 1, mn = 0
-    # Calibration point = 0.33
+    # General cosmetic functions --------------------------------------------
     def move_ears(self,t,t0,freq):
         self.ear = self.new_sine_generator(1,0,freq,0,t,t0)
-    
-    # Sets his awakeness through the bpm 
+        
+    def move_eyes(self,t,t0,freq):
+        self.eye = self.new_sine_generator(1,0,freq,0,t,t0)
+
+    def wag_tail(self,t,t0,freq):
+        self.tail = self.new_sine_generator(0.5,0.2,freq,0,t,t0)
+
+    # Sets his eyes openness based on bpm 
     def set_eyes(self,tempo):
         if tempo < 0.40:
             self.eye = 0
@@ -134,12 +107,7 @@ class JointPublisher(object):
         else:
             self.eye = tempo - 0.4
     
-    def move_eyes(self,t,t0,freq):
-        self.eye = self.new_sine_generator(1,0,freq,0,t,t0)
-
-    def wag_tail(self,t,t0,freq):
-        self.tail = self.new_sine_generator(0.5,0.2,freq,0,t,t0)
-
+    # General kinematic joints ---------------------------------------------
     # YAW MAX = 0.95, MIN = -0.95 (RAD) MAX = 55, MIN = -55 (DEG) 
     def move_head_yaw(self,t,t0,freq, y_max, y_min,y_phase):
         self.head_yaw = self.new_sine_generator(y_max,y_min,freq,0,t,t0)
@@ -150,11 +118,11 @@ class JointPublisher(object):
         self.head_pitch = self.new_sine_generator(p_max,p_min,freq,0,t,t0)
 
     # LIFT MAX = 1.04, MIN = 0.14 (RAD) MAX = 60, MIN = 8 (DEG)
-    def move_neck(self,t,t0,freq,l_max,l_min,l_phase):
+    def move_neck_lift(self,t,t0,freq,l_max,l_min,l_phase):
         self.neck_lift = self.new_sine_generator(l_max,l_min,freq,l_phase,t,t0)
         #print(self.neck_lift)
 
-    # Cosmetic Publisher controls the tail, eyes and ears
+    # Publishes joint info, done every iteration --------------------------
     def publish_cosmetics(self):
         self.cosmetic_joint_cmd = Float32MultiArray()
         self.cosmetic_joint_cmd.data= [0,self.tail,self.eye,self.eye,self.ear,self.ear]
@@ -166,7 +134,7 @@ class JointPublisher(object):
         self.kinematic_joint_cmd.position = [0,self.neck_lift,self.head_yaw,self.head_pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
       
-    # SPECIFIC DANCE MOVES ------------------------------
+    # Pre-programmed Moveset (One will be picked randomly every other iteration) ------------------------------
     # VER 1 : Moves just look janky unintentionally 
     def the_Robot(self,t,t0):
         #print ("Doing The Robot")
@@ -200,17 +168,19 @@ class JointPublisher(object):
     def head_bop(self,t,t0):
         self.kinematic_joint_cmd = JointState()
         freq = 2
-        pitch = abs(self.sine_generator(15,-15,0,freq,0,t,t0))-7
+        #pitch = abs(self.sine_generator(15,-15,0,freq,0,t,t0))-7
+        pitch = abs(self.new_sine_generator(0.26,-0.26,self.tempo,0,t,t0))-0.12 
 
         self.kinematic_joint_cmd.position = [0,0,0,pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
-    # More Square
     def full_head_spin(self,t,t0):
         self.kinematic_joint_cmd = JointState()
         freq = 1
-        yaw = self.sine_generator(55,-55,0,freq,0,t,t0)
-        pitch = self.cosine_generator(8,-22,0,freq,0,t,t0)
+        #yaw = self.sine_generator(55,-55,0,freq,0,t,t0)
+        #pitch = self.cosine_generator(8,-22,0,freq,0,t,t0)
+        yaw = self.new_sine_generator(0.95,-0.95,0,self.tempo,0,t,t0)
+        pitch = self.new_sine_generator(0.95,-0.95,0,self.tempo,math.pi/2,t,t0)
 
         self.kinematic_joint_cmd.position = [0,0,yaw,pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
@@ -219,11 +189,12 @@ class JointPublisher(object):
         self.kinematic_joint_cmd = JointState()
 
         bounce_f = self.tempo
-        lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
-        #print(lift)
+        #lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
+        lift = self.new_sine_generator(1.04,0.14,bounce_f,0,t,t0)
 
         yaw_f = bounce_f
-        yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))
+        #yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))
+        yaw = self.new_sine_generator(0.95,-0.95,yaw_f,math.pi/2,t,t0)
         self.kinematic_joint_cmd.position = [0,lift,yaw,0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
@@ -233,37 +204,24 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd = Float32MultiArray()
 
         blink_f=1
-        blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
+        #blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
+        #tempo * 2 coz otherwise even the blinks will be in sync with the head banging
+        # maybe that'll look good though idk
+        blink = self.new_sine_generator(0.8,0,self.tempo*2,0,t,t0)
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         #print(blink)
 
-        pitch_freq = 2
-        pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
-        lift_freq = 2
-        lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
+        #pitch_freq = 2
+        #pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
+        pitch = self.new_sine_generator(0.14,-0.38,self.tempo,0,t,t0)
+        #lift_freq = 2
+        #lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
+        lift = self.new_sine_generator(1.04,0.14,self.tempo,0,t,t0)
         #print(pitch)
         self.kinematic_joint_cmd.position = [0,lift,0,pitch]
 
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
         self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
-
-    def cosmetic_pub_test(self,t,t0):
-        self.cosmetic_joint_cmd = Float32MultiArray()
-
-        blink_f=1
-        blink= self.sine_generator(0,0,0.5,blink_f,t,t0)
-        self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
-        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
-
-    def set_new_tempo_mods(self):
-        self.ear_modifier = self.harmonics[random.randint(0,4)]
-        self.tail_modifier = self.harmonics[random.randint(0,4)]
-        self.eye_modifier = self.harmonics[random.randint(0,4)]
-        self.yaw_modifier = self.harmonics[random.randint(0,4)]
-        self.pitch_modifier = self.harmonics[random.randint(0,4)]
-        self.lift_modifier = self.harmonics[random.randint(0,4)]
-        print("new ones set to...")
-        print(f"ears:{self.ear_modifier}, eyes:{self.eye_modifier}, yaw:{self.yaw_modifier}")
 
     def change_lift_values(self):
         # MAX = 1.04 and MIN = 0.14 but random can only get a random integer
@@ -383,6 +341,8 @@ class JointPublisher(object):
             self.yaw_min = self.head_yaw
             self.yaw_max = self.yaw_min
 
+    # Puts all joints to a "normal" position, after song and when not dancing
+    # just for user experience sakes
     def reset_all_joints(self):
         self.eye = self.eye
         self.neck_lift = 0.29
@@ -415,34 +375,36 @@ class JointPublisher(object):
         # General Dancing 
         # LIFT = NECK, YAW = SIDE TO SIDE, PITCH = UP AND DOWN
         elif self.tempo != 0.0:
-            # Publish Eye / Ear Commands 
+
+            # Publish Eye / Ear Commands, these dont change once set  
             self.set_eyes(self.tempo)
-            #self.move_ears(t,t0,self.tempo)
+            self.move_ears(t,t0,self.tempo)
+
             # Publish Yaw / Pitch / Lift Commands
             self.move_head_pitch(t,t0,self.tempo,self.pitch_max,self.pitch_min,self.pitch_phase)
-            self.move_neck(t,t0,self.tempo*self.lift_modifier,self.lift_max,self.lift_min,self.lift_phase)
+            self.move_neck_lift(t,t0,self.tempo*self.lift_modifier,self.lift_max,self.lift_min,self.lift_phase)
             self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier,self.yaw_max,self.yaw_min,self.yaw_phase)
             rospy.sleep(0.02)
 
-            # Every 2 bars, switch one of them up by the max / min 
+            # Every 2 bars, switches the max / min of a joint
+            # random chance as well that that joint stops moving, adds dynamicity
             if self.t_2bars <= t:
-                #self.command = "out"
                 self.t_2bars = t + (8*self.tempo)
+
                 if self.joint_chooser == 0:
                     self.change_yaw_values()
                     print("new yaws")
                     print(self.yaw_max)
                     print(self.yaw_min)
                     self.joint_chooser =+1
+
                 elif self.joint_chooser == 1:
                     self.change_lift_values()
                     self.joint_chooser = 0
                     print("new lifts")
                     print(self.lift_max)
                     print(self.lift_min)
-                elif self.joint_chooser == 2:
-                    self.change_lift_values()
-                    self.joint_chooser = 0
+
 
             self.publish_cosmetics()
             self.publish_kinematics()
@@ -456,28 +418,10 @@ t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time() 
     movement.loop(t,t0)
-    #movement.wag_tail(t,t0,5)
-    #movement.move_ears(t,t0,2)
-    #movement.move_eyes(t,t0,3)
-    #movement.move_head_yaw(t,t0,1)
-    #movement.move_head_pitch(t,t0,3)
-    #movement.move_neck(t,t0,2)
-    #if movement.tempo != 0.0:
-    #    movement.wag_tail(t,t0,tempo)
-    #    movement.move_ears(t,t0,tempo)
-    #    movement.move_eyes(t,t0,tempo)
-    #    movement.move_head_yaw(t,t0,tempo)
-    #    movement.move_head_pitch(t,t0,tempo)
-    #    movement.move_neck(t,t0,tempo)  
-    #movement.publish_cosmetics()
-    #movement.publish_kinematics()
-    #movement.head_Banging(t,t0)
-    #movement.the_Robot(t,t0)
-    #movement.soul_Head_Bounce(t,t0)
-    #movement.yaw_and_pitch(t,t0)
-    #movement.cosmetic_pub_test(t,t0)
-    #movement.head_bop(t,t0)
-    rospy.sleep(0.1)
+    rospy.sleep(0.02)
+
+
+
 
 
 """
@@ -662,4 +606,24 @@ mdk/share/python/miro2/constants.py
         pitch = set_angle
         self.set_move_kinematic( tilt, lift, yaw, pitch)
         #rospy.sleep(0.05)
+
+    def set_move_kinematic(self, tilt = 0, lift = 0, yaw = 0, pitch = 0):
+        self.kinematic_joint_cmd.position = [tilt, lift, yaw, pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+
+    # movement for the tail, eye lid, ears
+    def set_move_cosmetic(self, tail_pitch = 0, tail_yaw = 0, left_eye = 0, right_eye = 0, left_ear = 0, right_ear = 0):
+        self.cosmetic_joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
+        
+     # Resets ears / eyes / tail to calibration(middle) settings
+    def set_move_cosmetic2(self):
+        self.cosmetic_joint_cmd = Float32MultiArray() 
+        # Puts them all to their default position I believe
+        self.data_calib = [0,0.5,0.5,0.5,0.33,0.33] 
+        self.cosmetic_joint_cmd.data = self.data_calib
+        #self.cosmetic_joint_cmd.data = [0,0,0,0,0,0]
+            
+        #self.cosmetic_joint_cmd.data = [tail_pitch,tail_yaw,left_eye,right_eye,left_ear,right_ear]
+        self.cosmetic_pub.publish(self.cosmetic_joint_cmd)
 """

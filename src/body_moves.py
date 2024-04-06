@@ -23,6 +23,7 @@ class BodyMoves(object):
         # self.command indicates what MiRo should be doing by checking it in 
         # the main loop
         self.command = ""
+        self.tempo = 0
 
         # Indicates how long a move is, should be a multiple of the songs beat length 
         self.moveLength = 0.0
@@ -47,6 +48,7 @@ class BodyMoves(object):
 
         if topic_message.tempo != 0:
             self.moveLength = (60 / topic_message.tempo ) * 8 
+            self.tempo = topic_message.tempo
         else:
             self.moveLength = 5
         self.command = topic_message.move_name
@@ -162,19 +164,26 @@ class BodyMoves(object):
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.5)   
 
+    def head_bounce_move(moveLength):
+        t0 = rospy.get_time()
+        tFinal = t0 + moveLength 
+
+        while t0 < tFinal:
+            print("printing so while loop doesn't panic")
+
     # Main Loop                                                                       
     def loop(self):
         if self.command == "done":
             self.wait()
         # NEED TO COME UP WITH BODY MOVES THAT MATCH THESE
         if self.command == "head_bounce":
-            self.half_spin(self.moveLength)
+            self.head_bounce_move(self.moveLength)
         if self.command == "head_bang":
-            self.rotate(self.moveLength)
+            self.head_bang_move(self.moveLength)
         if self.command == "full_head_spin":
-            self.half_spin()
+            self.head_spin_move(self.moveLength)
         if self.command == "head_bop":
-            self.half_spin()
+            self.head_bop_move(self.moveLength)
         elif self.moveLength != 0.0:
             rospy.sleep(0.02)
             self.small_rotate_and_back(4)
