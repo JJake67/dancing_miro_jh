@@ -1,93 +1,62 @@
 #!/usr/bin/env python3
-"""
-Simple action selection mechanism inspired by the K-bandit problem
-
-Initially, MiRo performs one of the following actions on random, namely: 
-wiggle ears, wag tail, rotate, turn on LEDs and simulate a Braitenberg Vehicle.
-
-While an action is being executed, stroking MiRo's head will reinforce it, while  
-stroking MiRo's body will inhibit it, by increasing or reducing the probability 
-of this action being picked in the future.
-
-NOTE: The code was tested for Python 2 and 3
-For Python 2 the shebang line is
-#!/usr/bin/env python
-"""
-
-# Imports
-##########################
 import math
 import os
 import numpy as np
 import time
 import rospy  # ROS Python interface
 from std_msgs.msg import (
-    Float32MultiArray,
-    UInt32MultiArray,
-    UInt16,
     UInt32
-)  # Used in callbacks
+)  # Used in flag publisher
+
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
 from diss.msg import body
 import miro2 as miro
-#import miro2 as miro  # MiRo Developer Kit library
-"""""
-try:  # For convenience, import this util separately
-    from miro2.lib import wheel_speed2cmd_vel  # Python 3
-except ImportError:
-    from miro2.utils import wheel_speed2cmd_vel  # Python 2
-##########################
-"""
 
+# May be useful for better wheel moves
+from miro2.lib import wheel_speed2cmd_vel
 
 class BodyMoves(object):
 
-    # Script settings below
     TICK = 0.02  # Main loop frequency (in secs, default is 50Hz)
-    #ACTION_DURATION = rospy.Duration(16.0)  # seconds
 
     def __init__(self):
+        # self.command indicates what MiRo should be doing by checking it in 
+        # the main loop
         self.command = ""
+
+        # Indicates how long a move is, should be a multiple of the songs beat length 
         self.moveLength = 0.0
 
         # Get robot name
         topic_root = "/" + os.getenv("MIRO_ROBOT_NAME")
-
-        # Initialise a new ROS node to communicate with MiRo
         rospy.init_node("body_moves", anonymous=True)
 
-        # Define Publishers and Subscribers
+        # Publishers
         self.pub_cmd_vel = rospy.Publisher(
             topic_root + "/control/cmd_vel", TwistStamped, queue_size=10
         )
         self.velocity = TwistStamped()
 
-        topic_name = topic_root + "/control/flags"
-        self.pub_flags = rospy.Publisher(topic_name, UInt32,queue_size = 0)
-        msg = UInt32()
-        msg.data = 0
-        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF
-        self.pub_flags.publish(msg)
-
+        # Subscriber
         self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
         rospy.loginfo("Body Move node is active...")
 
-    # Callback for when parameters are passed from Miro_Dance Node 
+    # Callback for when subscriber to body_topic 
+    # Reads in parameters being published from the Miro_Dance Node 
     def cmd_callback(self,topic_message):
-        #print(f'Node obtained msg: {topic_message.move_name}')
-        #print(f'Node also said: {topic_message.mode}')
+
         if topic_message.tempo != 0:
             self.moveLength = (60 / topic_message.tempo ) * 8 
         else:
-            self.moveLength = 0 
+            self.moveLength = 5
         self.command = topic_message.move_name
 
-
+    # Move Set -------------------------------------------------
     def rotate(self):
         #print("MiRO Rotating")
         t0 = rospy.Time.now()
         self.velocity.twist.linear.x = 0.05
-        self.velocity.twist.angular.z = 3/math.pi
+        self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.1)
 
@@ -110,7 +79,6 @@ class BodyMoves(object):
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
-
 
     # Not dead on, need to ask Alex about that 
     def full_spin(self,spin_length):
@@ -151,7 +119,7 @@ class BodyMoves(object):
             self.velocity.twist.linear.x = -0.1
     
             if t0 > tHalf:
-                self.velocity.twist.angular.z = -ang_vel
+                self.velocity.twist.linear.x = 0.1
 
             self.pub_cmd_vel.publish(self.velocity)
             rospy.sleep(0.02)
@@ -169,12 +137,12 @@ class BodyMoves(object):
         ang_vel = (2 / spin_length) * (math.pi/4)
 
         while t0 < tFinal:
-            self.velocity.twist.angular.z = 0.5
-            self.velocity.twist.linear.x = -0.03
+            self.velocity.twist.angular.z = 0.0
+            self.velocity.twist.linear.x = 0.00
                 
             if t0 > tHalf:
-                self.velocity.twist.angular.z = -0.5
-                self.velocity.twist.linear.x = 0.03
+                self.velocity.twist.angular.z = 0.0
+                self.velocity.twist.linear.x = 0.00
 
             self.pub_cmd_vel.publish(self.velocity)
 
@@ -187,33 +155,46 @@ class BodyMoves(object):
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
 
+    # Runs when MiRo is either done with the current song or is waiting for pre-processing to start dancing again
     def wait(self):
         self.velocity.twist.linear.x = 0
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.5)   
-                                                                                    
+
+    # Main Loop                                                                       
     def loop(self):
         if self.command == "done":
             self.wait()
+        # NEED TO COME UP WITH BODY MOVES THAT MATCH THESE
+        if self.command == "head_bounce":
+            self.half_spin(self.moveLength)
+        if self.command == "head_bang":
+            self.rotate(self.moveLength)
+        if self.command == "full_head_spin":
+            self.half_spin()
+        if self.command == "head_bop":
+            self.half_spin()
         elif self.moveLength != 0.0:
             rospy.sleep(0.02)
-            #print(self.moveLength)
             self.small_rotate_and_back(4)
             rospy.sleep(self.moveLength)
         
-        self.small_rotate_and_back(8)
-        #rospy.sleep(1)
-        #if self.command == "full_spin":
-        #    movement.half_spin(10)
-        #    self.command = "not_spin"
-        #else:
-        #    movement.wait()
+        # For Testing as it's own node 
+        #self.rotate()
 
 movement = BodyMoves()
 while not rospy.is_shutdown():
-    #movement.rotate_m()
     movement.loop()
+
+
+
+
+
+
+
+
+
 
 
 

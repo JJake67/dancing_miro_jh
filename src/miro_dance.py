@@ -6,20 +6,27 @@ import json
 import random
 import numpy as np
 from requests import post, get
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt32, UInt16MultiArray
 from std_srvs.srv import SetBool, SetBoolRequest
 from diss.msg import body, lights, head
+import miro2 as miro
 # from msg_place import SetString, SetStringResponse
 class MiroDance(object):
 
     # Main Node for Creating Dance Movements
 
     def __init__(self,dance_mode):
+        # dance_mode is either "Spotify" or "Auto"
+        # Spotify Mode : connects to the internet to get audio analysis for the song
+        #                through a usb ethernet connection and needs to be manually
+        #                turned on and off when prompted for it to work
+        #
+        # Auto Mode : Doesn't require internet connection, estimates bpm instead but
+        #             doesn't have access to information such as genre, song sections etc 
         self.dance_mode = dance_mode
-        self.ctrl_c = False
-        
-        #self.genre_list = []   Dont think I'll need
-        self.genre = ""
+
+        # Song Information -----------------------------------------------------
+        self.song_name = ""
         self.duration = 0.0 
         self.tempo = 0.0
         self.beat_len = 0.0
@@ -28,54 +35,58 @@ class MiroDance(object):
         self.music_start_time = 0
         self.bars = []
         self.sections = [] 
+        # Only chooses one genre to make move selection simpler
+        self.genre = ""
+
+        # Spotify Audio Features 
+        self.danceability = 0.0
+        self.valence = 0.0 
+
         
         # FOR TESTING
         #self.sections = [0,6,12,18,24,30,36,42,48]
         #self.tempo = 120
-        self.song_name = ""
-        self.last_beat = 0
+        #self.song_name = ""
 
-        # For Dancing
-        self.head_dance_move = ""
+        # For Dancing --------------------------------------------------------------
+        self.last_beat = 0
         self.head_move_names = ["head_bounce","head_bang","full_head_spin","head_bop"]
+        self.head_dance_move = ""
         self.body_dance_move = ""
         self.lights_move = ""
 
-        # Audio Features 
-        self.danceability = 0.0
-        self.valence = 0.0 
+        # For Creating a tone that users hear before MiRo starts dancing
+        self.tone = UInt16MultiArray()
+        self.tone.data = [0, 0, 0]
 
         # Required for device to access Spotify API app 
         self.client_id = "acbd6c4e089e4c9cb071ce9d3e4a9583"
         self.client_secret = "a35830533528441f9ae304893a279b38"
         
-        # SERVICES
-        ## LOCALISE SOUND SERVICE
+        # SERVICES --------------------------------------------------------------
+        
+        # Localise MiRo to orient the sound source
         service_name = "point_to_sound"
-
         rospy.wait_for_service(service_name)
         self.service_localise_MiRo = rospy.ServiceProxy(service_name, SetBool)
         self.request_to_localise = True
 
-        print("yellow")
-        # RECORD MIRO AUDIO SERVICE
+        # Records the audio from the MiRo speakers
         service_name = "listen_and_record_music"
         rospy.wait_for_service(service_name)
-        self.service_record = rospy.ServiceProxy(service_name,SetBool)
-        
+        self.service_record = rospy.ServiceProxy(service_name,SetBool)    
         self.request_to_record = SetBoolRequest()
         self.request_to_record.data = True
-        #print("Yellow")
+
         
-        # ESTIMATE TEMPO SERVICE
+        # Estimate the tempo of the song from the recording
         service_name = "estimate_tempo_and_beats"
         rospy.wait_for_service(service_name)
-        self.service_tempo = rospy.ServiceProxy(service_name, SetBool)
-        
+        self.service_tempo = rospy.ServiceProxy(service_name, SetBool)    
         self.request_for_tempo = SetBoolRequest()
         self.request_for_tempo.data = True 
-        #print("yellow")
-        # IDENTIFY SONG SHAZAM SERVICE
+
+        # Identifies the song using Shazamio
         if self.dance_mode == "Spotify":
             service_name = "identify_song"
 
@@ -85,22 +96,29 @@ class MiroDance(object):
             self.request_to_identify = SetBoolRequest()
             self.request_to_identify.data = True 
         
-        # PUBLISHERS
-        # body_msg : body movements
+        # Publishers --------------------------------------------------------------
+        topic_root = "/" + os.getenv("MIRO_ROBOT_NAME")
+        topic_name = topic_root + "/control/tone"
+        self.pub_tone = rospy.Publisher(topic_name, UInt16MultiArray, queue_size=0)
+
+        topic_name = topic_root + "/control/flags"
+        self.pub_flags = rospy.Publisher(topic_name, UInt32,queue_size = 0)
+
+        # For all movements that use the wheels 
         topic_name = "body_topic"
         self.bodyPub = rospy.Publisher(topic_name, body, queue_size=10)
 
+        # For all movements relating to the head, neck (and tail)
         topic_name = "head_topic"
         self.headPub = rospy.Publisher(topic_name, head, queue_size=10)
 
+        # For the LEDS on MiRo's back
         topic_name = "light_topic"
         self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
 
-        # localise_now : point_to_responsesound msg
-        rospy.sleep(1)
         rospy.loginfo("Miro_Dance Node is Active...")
 
-    # SPOTIFY 
+    # Functions for returning SPOTIFY analysis ----------------------------------------
     def set_track_data(self):
 
         # Finds Song on Spotify 
@@ -176,6 +194,7 @@ class MiroDance(object):
     def get_auth_headers(self,token):
         return {"Authorization": "Bearer " + token}
     
+    # Functions for publishing dance commands to joints --------------------------------
     def publish_body_cmds(self, value):
         message = body()
         message.tempo = self.tempo
@@ -184,7 +203,7 @@ class MiroDance(object):
             message.move_name = self.head_dance_move
         # Auto Mode
         else:
-            message.move_name = ""
+            message.move_name = "head_bounce"
         self.bodyPub.publish(message)
         rospy.sleep(0.05)
 
@@ -213,6 +232,30 @@ class MiroDance(object):
         self.headPub.publish(message)
         rospy.sleep(0.05)
 
+    # Parses the genre list returned by spotify, in order to get a general genre
+    # E.g Sam Cooke = ['Classic Soul','Soul','Vocal Jazz'] -->"Soul"
+    def decide_genre(self, list_of_genres):
+        genre = ""
+        for genre_name in list_of_genres:
+            if "soul" in genre_name:
+                genre = "soul"
+            if "pop" in genre_name:
+                genre = "pop"
+            if "rock" in genre_name:
+                genre = "rock"
+            if "metal" in genre_name:
+                genre = "metal"
+            if "blues" in genre_name:
+                genre = "blue"
+            if "classical" in genre_name:
+                genre = "classical"
+            if "electr" in genre_name:
+                genre = "electronic"
+            # If a genre has been found, doesn't need to iterate through the other genres
+            if genre != "":
+                break
+        return genre
+
     def stop_all_joints_cmd(self):
         head_message = head()
         lights_message = lights()
@@ -224,7 +267,11 @@ class MiroDance(object):
         self.lightsPub.publish(lights_message)
         self.bodyPub.publish(body_message)
         self.headPub.publish(head_message)
+    
+    # Misc Functions -------------------------------------------------------------------
 
+    # Randomly selects the next pre-programmed dance move for the next time it does a pre-programmed move
+    # The move that can be selected is dependent on the genre
     def change_moves_around(self):
         # Base on genres: pop, rock, blues, metal, 
         # For Head Dance Move
@@ -262,29 +309,14 @@ class MiroDance(object):
         length_to_sleep = beat_to_join - length_into_song - 0.1
         return length_to_sleep 
 
-    def decide_genre(self, list_of_genres):
-        genre = ""
-        for genre_name in list_of_genres:
-            if "soul" in genre_name:
-                genre = "soul"
-            if "pop" in genre_name:
-                genre = "pop"
-            if "rock" in genre_name:
-                genre = "rock"
-            if "metal" in genre_name:
-                genre = "metal"
-            if "blues" in genre_name:
-                genre = "blue"
-            if "classical" in genre_name:
-                genre = "classical"
-            if "electr" in genre_name:
-                genre = "electronic"
-            # If a genre has been found, doesn't need to iterate through the other genres
-            if genre != "":
-                break
-        return genre
-
+    # Runs before any dancing is performed, localises, listens, records and processes the audio to 
+    # retrieve audio analysis before any dancing starts
     def pre_dance_processes(self):
+        # Allows MiRo to move forward
+        msg = UInt32()
+        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF_REFLEX
+        self.pub_flags.publish(msg)
+
         # Identify Song
         print("Play Music Now")
         message = lights()
@@ -318,8 +350,8 @@ class MiroDance(object):
             
             self.beat_len = 60 / self.tempo
 
-            # Assumes the avg song is 3 minutes long
-            avg_song_len  = 180/self.beat_len 
+            # Assumes the avg song is 2 minutes long
+            avg_song_len  = 120/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
             print("here??")
 
@@ -352,43 +384,52 @@ class MiroDance(object):
         self.lightsPub.publish(message)
         rospy.sleep(2)
 
-    # MAIN PROGRAM LOOP 
+    # Main Loop 
     def loop(self):
-        # Enter Dancing State
         while not rospy.is_shutdown():
+
+            # Resets MiRo position to a default position
             head_message = head()
             head_message.move_name = "reset"
             self.headPub.publish(head_message)
 
-            self.pre_dance_processes()
-            # Test stuff -----
+            # Localises, listens, records, and processes data
+            #self.pre_dance_processes()
+
+            # Sounds tone to indicate dancing is about to start
+            self.tone.data[0] = 1   # Frequency
+            self.tone.data[1] = 50  # Volume
+            self.tone.data[2] = 3   # Duration
+            self.pub_tone.publish(self.tone)
+            rospy.sleep(1)
+
+            # TEST STUFF ---------------------------------------
             #self.song_name = "Deja Vu Beyonce"
             #print("Setting Track Data PLUGGG!!!!")
             #rospy.sleep(5)
             #self.set_track_data()
+            # THIS GETS SET IN PRE-PROCESSING (WORKS FOR AUTO AND SPOTIFY)
             self.music_start_time = rospy.get_time()
             #self.sections = [0,10,20,30,40,50,60,70,80]
-            #self.beat_len = 60 / self.tempo
             self.tempo = 76
-            # End of test stuff ---
+            #self.beat_len = 60 / self.tempo
+            # End of test stuff ---------------------------------
 
-            #dance_start_time = float(rospy.get_time())
-            #how_far_into_song = dance_start_time  + 5 - self.music_start_time
+            dance_start_time = float(rospy.get_time())
+            how_far_into_song = dance_start_time - self.music_start_time
             #length_to_wait = self.length_to_wait(how_far_into_song)
-            #print(length_to_wait)
-            #rospy.sleep(length_to_wait)
-            #print(f"the dance moves started {how_far_into_song} seconds after the song started")
-            
-            # Two Scenarios   
-            # s        
+            print(f"the dance moves started {how_far_into_song} seconds after the song started")
+
+            # Ensures dancing starts on beat
+            #rospy.sleep(length_to_wait)  
             if self.dance_mode == "Auto":
                 current_time = rospy.get_time() - self.music_start_time
-                print(current_time)
+
                 # Assumes the song is 2 minutes long so the dancing will stop 
-                while current_time < 15:
+                while current_time < 50:
                     self.publish_lights_cmd(False)
                     self.publish_body_cmds(False)
-                    self.publish_head_cmd(False,6) 
+                    #self.publish_head_cmd(False,6) 
                     current_time = rospy.get_time() - self.music_start_time
                     rospy.sleep(0.02)
 
@@ -403,11 +444,8 @@ class MiroDance(object):
                         current_time = rospy.get_time()-self.music_start_time
                         rospy.sleep(0.02)
                         
-                    # Alternates between the auto kind of dancing
-                    # and specific dance moves 
-                    autoMode = not autoMode
-                    # only changes the dance moves if they will be used 
-                    # next iteration
+                    # Alternates between the autonomous dancing and the pre-programmed moves
+                    # Changes the dance moves if they will be used next iteration 
                     print(self.sections[x])
                     if autoMode == False:
                         print("swapping moves")
@@ -428,16 +466,13 @@ if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
     args = rospy.myargv()
     dance_mode = str(args[1])
-    #print(f"#{dance_mode}#")
-    if dance_mode == "Spotify":
-        print("Spotify Mode")
-    elif dance_mode == "Auto":
-        print("auto mode")
-    else: 
-        print("No valid input, going into auto mode")
+
+    if dance_mode != "Spotify" and dance_mode != "Auto":
+        print("INVALID DANCE MODE!! GOING INTO AUTO MODE")
         dance_mode = "Auto"
-    rospy.sleep(1)
+    
     main = MiroDance(dance_mode)
+    rospy.sleep(1)
     main.loop()
 
 
