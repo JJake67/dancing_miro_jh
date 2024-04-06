@@ -97,7 +97,7 @@ class MiroDance(object):
         self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
 
         # localise_now : point_to_responsesound msg
-        
+        rospy.sleep(1)
         rospy.loginfo("Miro_Dance Node is Active...")
 
     # SPOTIFY 
@@ -213,6 +213,18 @@ class MiroDance(object):
         self.headPub.publish(message)
         rospy.sleep(0.05)
 
+    def stop_all_joints_cmd(self):
+        head_message = head()
+        lights_message = lights()
+        body_message = body()
+        head_message.move_name = "done"
+        body_message.move_name = "done"
+        lights_message.move_name = "done"
+        
+        self.lightsPub.publish(lights_message)
+        self.bodyPub.publish(body_message)
+        self.headPub.publish(head_message)
+
     def change_moves_around(self):
         # Base on genres: pop, rock, blues, metal, 
         # For Head Dance Move
@@ -275,17 +287,24 @@ class MiroDance(object):
     def pre_dance_processes(self):
         # Identify Song
         print("Play Music Now")
-        
+        message = lights()
+        message.move_name = "localising"
+        self.lightsPub.publish(message)
+        # SEND LIGHT COMMAND THAT SHOWS HE IS LOCALISING
         # Calls service that gets MiRo to face the source of the sound 
         response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
         self.music_start_time = float(response_point_to_sound.message)
-        
+        message = lights()
+        message.move_name = "listening"
+        self.lightsPub.publish(message)
         # Calls service that records the MiRo's microphones when music is playing and
         # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
         if self.music_start_time == 0.0:
             self.music_start_time = float(response_listen_and_record.message)
 
+        message.move_name = "processing"
+        self.lightsPub.publish(message)
         # Calls service that estimates tempo (needed for auto mode) and the time 
         # of the last beat in the recording (needed for synchronisation)
         response_est_tempo = self.service_tempo(self.request_for_tempo)
@@ -328,11 +347,20 @@ class MiroDance(object):
             self.set_track_data()
             self.beat_len = 60 / self.tempo
         
+        # PUBLISH STOP LIGHTS COMMAND
+        message.move_name = "done"
+        self.lightsPub.publish(message)
+        rospy.sleep(2)
+
     # MAIN PROGRAM LOOP 
     def loop(self):
         # Enter Dancing State
         while not rospy.is_shutdown():
-            #self.pre_dance_processes()
+            head_message = head()
+            head_message.move_name = "reset"
+            self.headPub.publish(head_message)
+
+            self.pre_dance_processes()
             # Test stuff -----
             #self.song_name = "Deja Vu Beyonce"
             #print("Setting Track Data PLUGGG!!!!")
@@ -357,7 +385,7 @@ class MiroDance(object):
                 current_time = rospy.get_time() - self.music_start_time
                 print(current_time)
                 # Assumes the song is 2 minutes long so the dancing will stop 
-                while current_time < 120:
+                while current_time < 15:
                     self.publish_lights_cmd(False)
                     #self.publish_body_cmds(False)
                     self.publish_head_cmd(False,6) 
@@ -387,10 +415,11 @@ class MiroDance(object):
                         print(self.head_dance_move)
                 
             # Song ended
+            self.stop_all_joints_cmd()
             print("The current song has ended")
             print("--------------------------")
             print("Restarting for next song...")
-
+            rospy.sleep(10)
             # Reset any values that need to be reset before doing another song
             self.music_start_time = 0 
 

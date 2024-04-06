@@ -76,7 +76,10 @@ class BodyMoves(object):
     def cmd_callback(self,topic_message):
         #print(f'Node obtained msg: {topic_message.move_name}')
         #print(f'Node also said: {topic_message.mode}')
-        self.moveLength = (60 / topic_message.tempo ) * 8 
+        if topic_message.tempo != 0:
+            self.moveLength = (60 / topic_message.tempo ) * 8 
+        else:
+            self.moveLength = 0 
         self.command = topic_message.move_name
 
 
@@ -191,11 +194,14 @@ class BodyMoves(object):
         rospy.sleep(0.5)   
                                                                                     
     def loop(self):
-        if self.moveLength != 0.0:
+        if self.command == "done":
+            self.wait()
+        elif self.moveLength != 0.0:
             rospy.sleep(0.02)
             #print(self.moveLength)
             self.small_rotate_and_back(self.moveLength)
             rospy.sleep(self.moveLength)
+
         #self.small_rotate_and_back(4)
         #rospy.sleep(1)
         #if self.command == "full_spin":

@@ -50,6 +50,7 @@ class JointPublisher(object):
         self.lift_phase = 0
         self.lift_modifier = 1
         
+        self.joint_chooser = 0 
         self.t_2bars = 0.0
         self.tempo = 0.0
         self.command = ""
@@ -82,7 +83,10 @@ class JointPublisher(object):
         #print(f'Node also said: {topic_message.mode}')
         #print(topic_message.tempo)
         self.command = topic_message.move_name 
-        self.tempo = 60 / topic_message.tempo
+        if topic_message.tempo != 0:
+            self.tempo = 60 / topic_message.tempo
+        else:
+            self.tempo = 0
         self.num_of_joints = topic_message.num_of_joints
     
     # I DONT UNDERSTAND WHY THESE EXIST WHEN YOU CAN JUST WRITE THE COMMAND JUST AS EASILY
@@ -129,6 +133,7 @@ class JointPublisher(object):
             self.eye = 0.5
         else:
             self.eye = tempo - 0.4
+    
     def move_eyes(self,t,t0,freq):
         self.eye = self.new_sine_generator(1,0,freq,0,t,t0)
 
@@ -160,8 +165,7 @@ class JointPublisher(object):
 
         self.kinematic_joint_cmd.position = [0,self.neck_lift,self.head_yaw,self.head_pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
-
-        
+      
     # SPECIFIC DANCE MOVES ------------------------------
     # VER 1 : Moves just look janky unintentionally 
     def the_Robot(self,t,t0):
@@ -269,7 +273,7 @@ class JointPublisher(object):
         print(joint_range)
         new_joint_min = 0 
         new_joint_max = 0 
-        if self.tempo <= 0.5:
+        if self.tempo <= 0.45:
             # FAST SONG, so uses a 1/3 of the range of motion in wave
             new_joint_range = joint_range - int(joint_range /3)
             new_joint_min = random.randint(0,new_joint_range) + joint_min 
@@ -295,9 +299,10 @@ class JointPublisher(object):
             self.lift_modifier = 0.5
         self.lift_phase = round(random.uniform(0,math.pi))
 
-        if (random.randint(1,3) == 1):
+        if (random.randint(1,5) == 1):
             print("neck turning off")
-            self.lift_min = round(random.uniform(0.14,1.04),2)
+            self.lift_min = self.neck_lift
+            #self.lift_min = round(random.uniform(0.14,1.04),2)
             self.lift_max = self.lift_min
 
     def change_pitch_values(self):
@@ -324,7 +329,7 @@ class JointPublisher(object):
 
             self.pitch_min = float(new_joint_min/100)
             self.pitch_max = float(new_joint_max/100)
-            self.pitch_modifier = 1
+            self.pitch_modifier = 0.5
             # THESE WILL PROBABLY NEED TO BE SELF. VALUES
         else:
             # SLOW SONG, uses full range
@@ -346,7 +351,7 @@ class JointPublisher(object):
         joint_range = abs(joint_max)+abs(joint_min)
         new_joint_min = 0 
         new_joint_max = 0 
-        if self.tempo <= 0.5:
+        if self.tempo <= 0.45:
             # FAST SONG, so uses a 1/3 of the range of motion in wave
             new_joint_range = joint_range - int(joint_range / 3)
             new_joint_min = random.randint(0,new_joint_range) + joint_min
@@ -375,13 +380,27 @@ class JointPublisher(object):
         if (random.randint(1,3) == 1):
             print("head side to side turning off")
             self.yaw_min = round(random.uniform(-0.95,0.95),2)
+            self.yaw_min = self.head_yaw
             self.yaw_max = self.yaw_min
+
+    def reset_all_joints(self):
+        self.eye = self.eye
+        self.neck_lift = 0.29
+        self.head_pitch = -0.15
+        self.head_yaw = 0.0
+
+        self.ear = 0.5
+
+        self.publish_cosmetics()
+        self.publish_kinematics()  
 
     def loop(self,t,t0):
         # Specific Dance Move
-        if self.command != "":
-            print(f"'{self.command}'")
-            if self.command == "head_bounce":
+        if self.command != "" and self.command != "done":
+            
+            if self.command == "reset":
+                self.reset_all_joints()
+            elif self.command == "head_bounce":
                 self.soul_Head_Bounce(t,t0)
             elif self.command == "head_bang":
                 self.head_Banging(t,t0)
@@ -396,68 +415,37 @@ class JointPublisher(object):
         # General Dancing 
         # LIFT = NECK, YAW = SIDE TO SIDE, PITCH = UP AND DOWN
         elif self.tempo != 0.0:
-            self.t_2bars = t + (8*self.tempo)
-            joint_chooser = 0 
-            self.change_yaw_values()
-            #self.change_pitch_values()
-            self.change_lift_values()
+            # Publish Eye / Ear Commands 
+            self.set_eyes(self.tempo)
+            #self.move_ears(t,t0,self.tempo)
+            # Publish Yaw / Pitch / Lift Commands
+            self.move_head_pitch(t,t0,self.tempo,self.pitch_max,self.pitch_min,self.pitch_phase)
+            self.move_neck(t,t0,self.tempo*self.lift_modifier,self.lift_max,self.lift_min,self.lift_phase)
+            self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier,self.yaw_max,self.yaw_min,self.yaw_phase)
+            rospy.sleep(0.02)
 
-            while (self.command == "") and (self.tempo != 0.0):
-                # Publish Eye / Ear Commands 
-                self.set_eyes(self.tempo)
-                #self.move_ears(t,t0,self.tempo)
-                # Publish Yaw / Pitch / Lift Commands
-                self.move_head_pitch(t,t0,self.tempo,self.pitch_max,self.pitch_min,self.pitch_phase)
-                self.move_neck(t,t0,self.tempo*self.lift_modifier,self.lift_max,self.lift_min,self.lift_phase)
-                self.move_head_yaw(t,t0,self.tempo*self.yaw_modifier,self.yaw_max,self.yaw_min,self.yaw_phase)
-                rospy.sleep(0.02)
+            # Every 2 bars, switch one of them up by the max / min 
+            if self.t_2bars <= t:
+                #self.command = "out"
+                self.t_2bars = t + (8*self.tempo)
+                if self.joint_chooser == 0:
+                    self.change_yaw_values()
+                    print("new yaws")
+                    print(self.yaw_max)
+                    print(self.yaw_min)
+                    self.joint_chooser =+1
+                elif self.joint_chooser == 1:
+                    self.change_lift_values()
+                    self.joint_chooser = 0
+                    print("new lifts")
+                    print(self.lift_max)
+                    print(self.lift_min)
+                elif self.joint_chooser == 2:
+                    self.change_lift_values()
+                    self.joint_chooser = 0
 
-                # Every 2 bars, switch one of them up by the max / min 
-                if self.t_2bars <= t:
-                    #self.command = "out"
-                    self.t_2bars = t + (8*self.tempo)
-                    if joint_chooser == 0:
-                        self.change_yaw_values()
-                        print("new yaws")
-                        print(self.yaw_max)
-                        print(self.yaw_min)
-                        joint_chooser =+1
-                    elif joint_chooser == 1:
-                        self.change_lift_values()
-                        joint_chooser = 0
-                        print("new lifts")
-                        print(self.lift_max)
-                        print(self.lift_min)
-                    elif joint_chooser == 2:
-                        self.change_lift_values()
-                        joint_chooser = 0
-                self.publish_cosmetics()
-                self.publish_kinematics()
-                t = rospy.get_time() 
-
-                    
-
-            #if t < t0 + (16/3):
-            #    self.move_head_yaw(t,t0,self.tempo,0.9,0.0)
-            #else:
-            #    self.move_head_yaw(t,t0,self.tempo,0.0,-0.9)
-
-            #self.move_head_yaw(t,t0,self.tempo,0.95,-0.95)
-            #self.move_ears(t,t0,self.tempo*2)
-            #self.wag_tail(t,t0,self.tempo*2)
-            #self.move_eyes(t,t0,self.tempo) 
-            #self.move_head_pitch(t,t0,self.tempo)
-            #self.move_neck(t,t0,self.tempo)
-            # Switches up the tempos of each joint every 16 beats / 4 bars to keep it fresh 
-            
-            #if self.t_4bars <= t:
-            #    self.t_4bars = t + (32*self.tempo)
-            #    self.set_new_tempo_mods()
-            
             self.publish_cosmetics()
             self.publish_kinematics()
-
-
 
 movement = JointPublisher()
 t0 = rospy.get_time()

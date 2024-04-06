@@ -17,6 +17,7 @@ import sys
 import wave, struct
 import pydub
 from RobotInterface import RobotInterface
+from diss.msg import lights
 # Recording Setup 
 
 BUFFER_STUFF_SAMPLES = 4000
@@ -101,6 +102,9 @@ class listen_and_record():
         #print ("publish", topic)
         
         self.pub_stream = rospy.Publisher(topic, Int16MultiArray, queue_size=0)
+
+        topic_name = "light_topic"
+        self.lightsPub = rospy.Publisher(topic_name, lights, queue_size=10)
 
         self.music_start_time = 0.0
         print("Listen and Record Service Node now active ...")
@@ -233,7 +237,12 @@ class listen_and_record():
                 ## Print that a sound has been detected
                 print("Loud Signal Detected")
                 print("Recording...")
-                self.record_now = True
+
+    
+                message = lights()
+                message.move_name = "recording"
+                self.lightsPub.publish(message)
+
                 self.start_listening = True
                 self.music_start_time = rospy.get_time()
                 #print(self.music_start_time)
@@ -242,13 +251,12 @@ class listen_and_record():
                 print("here?")
                 #clear the data collected when miro is turning
                 self.audio_event=[]
-                self.status_code = 1
+                self.status_code = 0
                 self.start_listening = False
                 response_from_server.success = True
                 response_from_server.message = str(self.music_start_time)
-                self.record_now = False
                 # Resets these two so that the service can be called again
-                self.micbuf = None
+                self.micbuf = np.zeros((0, 4), 'uint16')
                 self.outbuf = None
                 return response_from_server
 

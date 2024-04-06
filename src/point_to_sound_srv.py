@@ -151,7 +151,7 @@ class PointToSoundService():
             else:
                 self.status_code = 1
             #print(time_stood_still)
-            if time_stood_still > 2:
+            if time_stood_still > 5:
                 response_from_server.success = True
                 response_from_server.message = str(self.music_start_time)
                 return response_from_server

@@ -22,6 +22,7 @@ class IllumPublisher(object):
         self.color1 = "red"
         self.color2 = "blue"
         self.colours = ["red","blue","orange","yellow","purple","green"]
+        self.preset = False
         self.next_lights = 0
 
         # Subscribers and Publishers
@@ -38,11 +39,14 @@ class IllumPublisher(object):
         
         # Check if the genre has changed, if so needs to update the 
         # colours that will be used
-        if self.genre != topic_msg.move_name:
+        if topic_msg.move_name == "localising" or topic_msg.move_name == "recording" or topic_msg.move_name == "processing" or topic_msg.move_name == "listening" or topic_msg.move_name == "done":
+            self.genre = topic_msg.move_name
+
+        elif self.genre != topic_msg.move_name:
+
             self.genre = topic_msg.move_name
             self.set_colours_by_genre()
-
-        self.tempo = 60/topic_msg.tempo
+            self.tempo = 60/topic_msg.tempo
 
     def set_colours_by_genre(self):
         if self.genre == "pop":
@@ -76,9 +80,9 @@ class IllumPublisher(object):
         elif colour_name == "purple":
                 return [255,102,255]
         elif colour_name == "pink":
-                return [255,0,0]
+                return [255,105,180]
         elif colour_name == "black":
-                return [255,0,255]
+                return [0,0,0]
         elif colour_name == "white":
                 return [255,255,255]
         elif colour_name == "black":
@@ -167,7 +171,20 @@ class IllumPublisher(object):
         self.color2 = self.colours[color2]
         
     def loop(self,t,t0):
-        if self.tempo != 0.0:
+        if self.genre == "done":
+             self.flashing_lights("white","white",0.5)
+        if self.genre == "localising":
+                self.flashing_lights("green","white",1)
+        elif self.genre == "listening":
+                self.flashing_lights("red","red",1)
+        elif self.genre == "recording":
+                self.flashing_lights("orange","pink",0.2)
+        elif self.genre == "processing":
+                self.transition_lights("blue","yellow",1)
+                self.transition_lights("yellow","red",1)
+                self.transition_lights("red","blue",1)
+
+        elif self.tempo != 0.0 and self.genre != "done":
             if self.next_lights == 0:
                 self.flashing_lights(self.color1,self.color2,self.tempo)
             if self.next_lights == 1:
