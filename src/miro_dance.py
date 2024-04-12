@@ -371,9 +371,13 @@ class MiroDance(object):
                     self.song_name = response_song_identification.message
                     print("song found")
                 else:
-                    print("unplug phone, cont playing music")
+                    message.move_name = "listening"
+                    self.lightsPub.publish(message)
+                    print("unplug phone, and cont playing music, you have 5 seconds")
                     rospy.sleep(5)
                     response_listen_and_record = self.service_record(self.request_to_record)
+                    message.move_name = "processing"
+                    self.lightsPub.publish(message)
 
             # Calls Spotify only once the song name has definitely been found
             self.set_track_data()
