@@ -24,9 +24,11 @@ class BodyMoves(object):
         # the main loop
         self.command = ""
         self.tempo = 0
+        self.sequence_step = 0
+        self.t_next_step = 3
 
         # Indicates how long a move is, should be a multiple of the songs beat length 
-        self.moveLength = 0.0
+        #self.moveLength = 0.0
 
         # Get robot name
         topic_root = "/" + os.getenv("MIRO_ROBOT_NAME")
@@ -48,10 +50,13 @@ class BodyMoves(object):
 
         if topic_message.tempo != 0:
             self.moveLength = (60 / topic_message.tempo ) * 8 
-            self.tempo = topic_message.tempo
+            self.tempo = topic_message.tempo / 60 
         else:
             self.moveLength = 5
         self.command = topic_message.move_name
+
+    def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
+        return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
 
     # Move Set -------------------------------------------------
     def rotate(self):
@@ -163,21 +168,62 @@ class BodyMoves(object):
         self.velocity.twist.angular.z = 0
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.5)   
+    
+    # Body Moves to correspond with pre-programmed head moves
+    
+    # Should just move back and forth with the head 
+    def head_bounce_move(self,t,t0):
+        ang_vel = self.new_sine_generator(0.3,-0.3,self.tempo,0,t,t0)
+        self.velocity.twist.angular.z = ang_vel
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.02)
 
-    def head_bounce_move(moveLength):
-        t0 = rospy.get_time()
-        tFinal = t0 + moveLength 
+    def head_bang_move(self,t,t0):
+        # 1 - spin right for a bit
+        if self.sequence_step == 0: 
+            ang_vel = 0.1
+        # 2 - stay still for a bit 
+        if self.sequence_step == 1:
+            ang_vel = 0 
+        # 3 - spin left for a bit 
+        if self.sequence_step == 2:
+            ang_vel = 0.1
+        # 4 - stay still for a bit
+        if self.sequence_step == 3:
+            ang_vel = 0
 
-        while t0 < tFinal:
-            print("printing so while loop doesn't panic")
+        if self.t_next_step < t:
+            if self.sequence_step == 3:
+                self.sequence_step = 0 
+            else: self.sequence_step =+ 1
+            self.t_next_step = t + (4*self.tempo)
+
+        self.velocity.twist.angular.z = ang_vel
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.02)
+
+    def head_spin_move(self,t,t0):
+        ang_vel = self.new_sine_generator(0.3,-0.3,self.tempo,0,t,t0)
+        self.velocity.twist.angular.z = ang_vel
+
+        linear_vel = self.new_sine_generator(0.1,-0.1,self.tempo,math.pi/2,t,t0)
+        self.velocity.twist.linear.x = linear_vel
+        self.pub_cmd_vel.publish(self.velocity)
+
+    def head_bop_move(self,t,t0):
+        ang_vel = 0.1
+        self.velocity.twist.angular.z = ang_vel 
+        self.pub_cmd_vel.publish(self.velocity)
+
+
 
     # Main Loop                                                                       
-    def loop(self):
+    def loop(self,t,t0):
         if self.command == "done":
             self.wait()
         # NEED TO COME UP WITH BODY MOVES THAT MATCH THESE
         if self.command == "head_bounce":
-            self.head_bounce_move(self.moveLength)
+            self.head_bounce_move(t,t0)
         if self.command == "head_bang":
             self.head_bang_move(self.moveLength)
         if self.command == "full_head_spin":
@@ -193,8 +239,10 @@ class BodyMoves(object):
         #self.rotate()
 
 movement = BodyMoves()
+t0 = rospy.get_time()
 while not rospy.is_shutdown():
-    movement.small_rotate_and_back(4)
+    t = rospy.get_time()
+    movement.loop(t,t0)
 
 
 

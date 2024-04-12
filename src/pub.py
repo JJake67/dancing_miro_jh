@@ -167,21 +167,21 @@ class JointPublisher(object):
     
     def head_bop(self,t,t0):
         self.kinematic_joint_cmd = JointState()
-        #freq = 2
+        freq = 1 / self.tempo
         #pitch = abs(self.sine_generator(15,-15,0,freq,0,t,t0))-7
         #print(pitch)
-        pitch = abs(self.new_sine_generator(0.26,-0.26,self.tempo,0,t,t0))-0.2
+        pitch = abs(self.new_sine_generator(0.26,-0.26,freq,0,t,t0))-0.2
 
         self.kinematic_joint_cmd.position = [0,0,0,pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
     def full_head_spin(self,t,t0):
         self.kinematic_joint_cmd = JointState()
-        freq = self.tempo
+        freq = 1/ self.tempo
         #yaw = self.sine_generator(55,-55,0,freq,0,t,t0)
         #pitch = self.cosine_generator(8,-22,0,freq,0,t,t0)
-        yaw = self.new_sine_generator(0.95,-0.95,self.tempo,0,t,t0)
-        pitch = self.new_sine_generator(0.14,-0.38,self.tempo,math.pi/2,t,t0)
+        yaw = self.new_sine_generator(0.95,-0.95,freq,0,t,t0)
+        pitch = self.new_sine_generator(0.14,-0.38,freq,math.pi/2,t,t0)
 
         self.kinematic_joint_cmd.position = [0,0,yaw,pitch]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
@@ -191,11 +191,11 @@ class JointPublisher(object):
         # range = 0.9 / 2 
         # upper = 0.59
         # 1.04 / 0.14
-        bounce_f = self.tempo 
+        bounce_f = 1 / self.tempo  
         #lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
         lift = abs(self.new_sine_generator(0.3,-0.3,bounce_f,0,t,t0)) + 0.45
 
-        yaw_f = self.tempo 
+        yaw_f = 1 / self.tempo 
         #yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))
         yaw = self.new_sine_generator(0.95,-0.95,yaw_f,math.pi/2,t,t0)
         self.kinematic_joint_cmd.position = [0,lift,yaw,0]
@@ -206,20 +206,20 @@ class JointPublisher(object):
         self.kinematic_joint_cmd = JointState()
         self.cosmetic_joint_cmd = Float32MultiArray()
 
-        #blink_f= self.tempo 
+        blink_f= 1 / self.tempo
         #blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
         #tempo * 2 coz otherwise even the blinks will be in sync with the head banging
         # maybe that'll look good though idk
-        blink = self.new_sine_generator(0.8,0,self.tempo/2,0,t,t0)
+        blink = self.new_sine_generator(0.8,0,blink_f,0,t,t0)
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         #print(blink)
 
-        #pitch_freq = self.tempo
+        pitch_freq = 1/ self.tempo
         #pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
-        pitch = self.new_sine_generator(0.14,-0.38,self.tempo,0,t,t0)
-        #lift_freq = self.tempo
+        pitch = self.new_sine_generator(0.14,-0.38,pitch_freq,0,t,t0)
+        lift_freq = 1 / self.tempo
         #lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
-        lift = self.new_sine_generator(1.04,0.14,self.tempo,0,t,t0)
+        lift = self.new_sine_generator(1.04,0.14,lift_freq,0,t,t0)
         #print(pitch)
         self.kinematic_joint_cmd.position = [0,lift,0,pitch]
 
