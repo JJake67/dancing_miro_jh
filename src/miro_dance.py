@@ -199,13 +199,13 @@ class MiroDance(object):
         message = body()
         message.tempo = self.tempo
         # Using Spotify Data
-        if value == True:
+        if value == False:
             message.move_name = self.head_dance_move
         # Auto Mode
         else:
-            message.move_name = "head_bounce"
+            message.move_name = "general"
         self.bodyPub.publish(message)
-        rospy.sleep(0.05)
+        rospy.sleep(0.02)
 
     def publish_lights_cmd(self, value):
         message = lights()
@@ -214,15 +214,13 @@ class MiroDance(object):
         message.move_name = self.genre
 
         self.lightsPub.publish(message)
-        rospy.sleep(0.05)
+        rospy.sleep(0.02)
 
-    def publish_head_cmd(self, value,num_of_joints):
+    def publish_head_cmd(self, value):
         message = head()
         message.tempo = self.tempo
-        message.num_of_joints = num_of_joints
-
         # Using Spotify Data
-        if value == True:
+        if value == False:
             message.move_name = self.head_dance_move
         # Auto Mode
         else:
@@ -230,7 +228,7 @@ class MiroDance(object):
 
 
         self.headPub.publish(message)
-        rospy.sleep(0.05)
+        rospy.sleep(0.02)
 
     # Parses the genre list returned by spotify, in order to get a general genre
     # E.g Sam Cooke = ['Classic Soul','Soul','Vocal Jazz'] -->"Soul"
@@ -353,7 +351,7 @@ class MiroDance(object):
             # Assumes the avg song is 2 minutes long
             avg_song_len  = 120/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
-            print("here??")
+            #print("here??")
 
         #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         
@@ -414,8 +412,8 @@ class MiroDance(object):
             #self.set_track_data()
             # THIS GETS SET IN PRE-PROCESSING (WORKS FOR AUTO AND SPOTIFY)
             self.music_start_time = rospy.get_time()
-            #self.sections = [0,10,20,30,40,50,60,70,80]
-            self.tempo = 76
+            self.sections = [10,20,30,40,50,60,70,80]
+            self.tempo = 120
             #self.beat_len = 60 / self.tempo
             # End of test stuff ---------------------------------
 
@@ -425,36 +423,41 @@ class MiroDance(object):
             print(f"the dance moves started {how_far_into_song} seconds after the song started")
 
             # Ensures dancing starts on beat
-            #rospy.sleep(length_to_wait)  
+            #rospy.sleep(length_to_wait)
             if self.dance_mode == "Auto":
+                self.genre = "none"
                 current_time = rospy.get_time() - self.music_start_time
 
                 # Assumes the song is 2 minutes long so the dancing will stop 
                 while current_time < 50:
                     self.publish_lights_cmd(False)
                     self.publish_body_cmds(False)
-                    #self.publish_head_cmd(False,6) 
+                    #self.publish_head_cmd(False) 
                     current_time = rospy.get_time() - self.music_start_time
                     rospy.sleep(0.02)
 
             if self.dance_mode == "Spotify":    
                 autoMode = True
+                #Testing
+                self.genre = "none"
                 for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-self.music_start_time
                     while current_time < self.sections[x]: 
-                        self.publish_body_cmds(False)
-                        self.publish_head_cmd(autoMode,6)
+                        self.publish_body_cmds(autoMode)
+                        self.publish_head_cmd(autoMode)
                         self.publish_lights_cmd(autoMode)
                         current_time = rospy.get_time()-self.music_start_time
                         rospy.sleep(0.02)
-                        
                     # Alternates between the autonomous dancing and the pre-programmed moves
                     # Changes the dance moves if they will be used next iteration 
                     print(self.sections[x])
-                    if autoMode == False:
-                        print("swapping moves")
+                    # Swaps moves when automode is on, as the next iteration
+                    # will be the preprogrammed moves
+                    if autoMode == True:
+                        #print("swapping moves")
                         self.change_moves_around()
-                        print(self.head_dance_move)
+                        print(f"Next Move:{self.head_dance_move}")
+                    autoMode = not autoMode
                 
             # Song ended
             self.stop_all_joints_cmd()

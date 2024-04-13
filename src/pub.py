@@ -44,7 +44,7 @@ class JointPublisher(object):
         
         self.joint_chooser = 0 
         self.t_2bars = 0.0
-        self.tempo = 0.5
+        self.tempo = 0
         self.command = ""
 
         # Publishers
@@ -101,11 +101,11 @@ class JointPublisher(object):
     # Sets his eyes openness based on bpm 
     def set_eyes(self,tempo):
         if tempo < 0.40:
-            self.eye = 0
-        elif tempo > 0.9:
+            self.eye = 0.2
+        elif tempo > 0.7:
             self.eye = 0.5
         else:
-            self.eye = tempo - 0.4
+            self.eye = tempo - 0.2
     
     # General kinematic joints ---------------------------------------------
     # YAW MAX = 0.95, MIN = -0.95 (RAD) MAX = 55, MIN = -55 (DEG) 
@@ -167,7 +167,7 @@ class JointPublisher(object):
     
     def head_bop(self,t,t0):
         self.kinematic_joint_cmd = JointState()
-        freq = 1 / self.tempo
+        freq = (1 / self.tempo)/2
         #pitch = abs(self.sine_generator(15,-15,0,freq,0,t,t0))-7
         #print(pitch)
         pitch = abs(self.new_sine_generator(0.26,-0.26,freq,0,t,t0))-0.2
@@ -177,7 +177,7 @@ class JointPublisher(object):
 
     def full_head_spin(self,t,t0):
         self.kinematic_joint_cmd = JointState()
-        freq = 1/ self.tempo
+        freq = (1 / self.tempo)/2
         #yaw = self.sine_generator(55,-55,0,freq,0,t,t0)
         #pitch = self.cosine_generator(8,-22,0,freq,0,t,t0)
         yaw = self.new_sine_generator(0.95,-0.95,freq,0,t,t0)
@@ -191,13 +191,13 @@ class JointPublisher(object):
         # range = 0.9 / 2 
         # upper = 0.59
         # 1.04 / 0.14
-        bounce_f = 1 / self.tempo  
+        bounce_f = (1 / self.tempo)/2 
         #lift = abs(self.sine_generator(0,2,0,bounce_f,0,t,t0))
-        lift = abs(self.new_sine_generator(0.3,-0.3,bounce_f,0,t,t0)) + 0.45
+        lift = abs(self.new_sine_generator(0.3,-0.3,bounce_f/2,0,t,t0)) + 0.45
 
-        yaw_f = 1 / self.tempo 
+        yaw_f = (1 / self.tempo)/2 
         #yaw = (self.cosine_generator(0,2,0,yaw_f,0,t,t0))
-        yaw = self.new_sine_generator(0.95,-0.95,yaw_f,math.pi/2,t,t0)
+        yaw = self.new_sine_generator(0.95,-0.95,yaw_f/2,math.pi/2,t,t0)
         self.kinematic_joint_cmd.position = [0,lift,yaw,0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
 
@@ -206,7 +206,7 @@ class JointPublisher(object):
         self.kinematic_joint_cmd = JointState()
         self.cosmetic_joint_cmd = Float32MultiArray()
 
-        blink_f= 1 / self.tempo
+        blink_f= (1 / self.tempo)/2
         #blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
         #tempo * 2 coz otherwise even the blinks will be in sync with the head banging
         # maybe that'll look good though idk
@@ -214,10 +214,10 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         #print(blink)
 
-        pitch_freq = 1/ self.tempo
+        pitch_freq = (1 / self.tempo)/2
         #pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
         pitch = self.new_sine_generator(0.14,-0.38,pitch_freq,0,t,t0)
-        lift_freq = 1 / self.tempo
+        lift_freq = (1 / self.tempo)/2
         #lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
         lift = self.new_sine_generator(1.04,0.14,lift_freq,0,t,t0)
         #print(pitch)
@@ -339,7 +339,7 @@ class JointPublisher(object):
             self.yaw_modifier = 0.5
         self.yaw_phase = round(random.uniform(0,math.pi))
         if (random.randint(1,3) == 1):
-            print("head side to side turning off")
+            #print("head side to side turning off")
             self.yaw_min = round(random.uniform(-0.95,0.95),2)
             self.yaw_min = self.head_yaw
             self.yaw_max = self.yaw_min
@@ -360,7 +360,7 @@ class JointPublisher(object):
     def loop(self,t,t0):
         # Specific Dance Move
         if self.command != "" and self.command != "done":
-            
+            #if self.tempo != 0.0:
             if self.command == "reset":
                 self.reset_all_joints()
             elif self.command == "head_bounce":
@@ -373,7 +373,8 @@ class JointPublisher(object):
                 self.head_bop(t,t0)
             else:
                 self.head_bop(t,t0)
-                #print("head bop but not the real one")
+                    #print("head bop but not the real one")
+            rospy.sleep(0.02)
 
         # General Dancing 
         # LIFT = NECK, YAW = SIDE TO SIDE, PITCH = UP AND DOWN
@@ -419,9 +420,8 @@ t0 = rospy.get_time()
 #movement.tempo = 0.5
 while not rospy.is_shutdown():
     t = rospy.get_time() 
-    movement.head_bop(t,t0)
-    #movement.loop(t,t0)
-    rospy.sleep(0.02)
+    #movement.head_bop(t,t0)
+    movement.loop(t,t0)
 
 
 

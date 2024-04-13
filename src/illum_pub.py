@@ -185,6 +185,7 @@ class IllumPublisher(object):
                 self.transition_lights("red","blue",1)
 
         elif self.tempo != 0.0 and self.genre != "done":
+            print("here")
             if self.next_lights == 0:
                 self.flashing_lights(self.color1,self.color2,self.tempo)
             if self.next_lights == 1:

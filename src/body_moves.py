@@ -40,6 +40,9 @@ class BodyMoves(object):
         )
         self.velocity = TwistStamped()
 
+        topic_name = topic_root + "/control/flags"
+        self.pub_flags = rospy.Publisher(topic_name, UInt32,queue_size = 0)
+
         # Subscriber
         self.sub = rospy.Subscriber("body_topic", body, self.cmd_callback)
         rospy.loginfo("Body Move node is active...")
@@ -48,11 +51,8 @@ class BodyMoves(object):
     # Reads in parameters being published from the Miro_Dance Node 
     def cmd_callback(self,topic_message):
 
-        if topic_message.tempo != 0:
-            self.moveLength = (60 / topic_message.tempo ) * 8 
-            self.tempo = topic_message.tempo / 60 
-        else:
-            self.moveLength = 5
+        self.tempo = topic_message.tempo / 60 
+
         self.command = topic_message.move_name
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
@@ -173,21 +173,23 @@ class BodyMoves(object):
     
     # Should just move back and forth with the head 
     def head_bounce_move(self,t,t0):
-        ang_vel = self.new_sine_generator(0.3,-0.3,self.tempo,0,t,t0)
+        lin_vel = 0.01
+        ang_vel = self.new_sine_generator(0.5,-0.5,self.tempo/2,0,t,t0)
         self.velocity.twist.angular.z = ang_vel
+        self.velocity.twist.linear.x = lin_vel
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.02)
 
     def head_bang_move(self,t,t0):
         # 1 - spin right for a bit
         if self.sequence_step == 0: 
-            ang_vel = 0.1
+            ang_vel = 0.15 * self.tempo
         # 2 - stay still for a bit 
         if self.sequence_step == 1:
             ang_vel = 0 
         # 3 - spin left for a bit 
         if self.sequence_step == 2:
-            ang_vel = 0.1
+            ang_vel = -0.15 * self.tempo
         # 4 - stay still for a bit
         if self.sequence_step == 3:
             ang_vel = 0
@@ -195,46 +197,58 @@ class BodyMoves(object):
         if self.t_next_step < t:
             if self.sequence_step == 3:
                 self.sequence_step = 0 
-            else: self.sequence_step =+ 1
-            self.t_next_step = t + (4*self.tempo)
+            else: 
+                self.sequence_step = self.sequence_step + 1
+            self.t_next_step = t + (self.tempo)
 
         self.velocity.twist.angular.z = ang_vel
+        self.velocity.twist.linear.x = 0 
         self.pub_cmd_vel.publish(self.velocity)
         rospy.sleep(0.02)
 
     def head_spin_move(self,t,t0):
-        ang_vel = self.new_sine_generator(0.3,-0.3,self.tempo,0,t,t0)
-        self.velocity.twist.angular.z = ang_vel
+        ang_vel_1 = self.new_sine_generator(0.5,-0.5,self.tempo,0,t,t0)
+        ang_vel_2 = self.new_sine_generator(0.5,0.5,self.tempo*2,math.pi/2,t,t0)
+        self.velocity.twist.angular.z = ang_vel_1 + ang_vel_2
 
-        linear_vel = self.new_sine_generator(0.1,-0.1,self.tempo,math.pi/2,t,t0)
-        self.velocity.twist.linear.x = linear_vel
         self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.02)
 
     def head_bop_move(self,t,t0):
-        ang_vel = 0.1
-        self.velocity.twist.angular.z = ang_vel 
+        ang_vel_1 = self.new_sine_generator(0.5,-0.5,self.tempo,0,t,t0)
+        ang_vel_2 = self.new_sine_generator(0.5,0.5,self.tempo*2,math.pi/2,t,t0)
+        self.velocity.twist.angular.z = ang_vel_1 + ang_vel_2
+
         self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.02)
 
-
-
+    def general_moves(self,t,t0):
+        msg = UInt32()
+        msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF_REFLEX
+        self.pub_flags.publish(msg)
+        lin_vel = 0.002
+        ang_vel = self.new_sine_generator(0.6,-0.6,self.tempo/2,0,t,t0)
+        self.velocity.twist.angular.z = ang_vel
+        self.velocity.twist.linear.x = lin_vel
+        self.pub_cmd_vel.publish(self.velocity)
+        rospy.sleep(0.02)
+    
     # Main Loop                                                                       
     def loop(self,t,t0):
-        if self.command == "done":
+        #Preprogrammed Moves
+        if self.command == "done" or self.command == "general":
             self.wait()
-        # NEED TO COME UP WITH BODY MOVES THAT MATCH THESE
-        if self.command == "head_bounce":
+        elif self.command == "head_bounce":
             self.head_bounce_move(t,t0)
-        if self.command == "head_bang":
-            self.head_bang_move(self.moveLength)
-        if self.command == "full_head_spin":
-            self.head_spin_move(self.moveLength)
-        if self.command == "head_bop":
-            self.head_bop_move(self.moveLength)
-        elif self.moveLength != 0.0:
-            rospy.sleep(0.02)
-            self.small_rotate_and_back(4)
-            rospy.sleep(self.moveLength)
-        
+        elif self.command == "head_bang":
+            self.head_bang_move(t,t0)
+        elif self.command == "full_head_spin":
+            self.head_bounce_move(t,t0)
+        elif self.command == "head_bop":
+            self.head_bang_move(t,t0)
+        # General Dancing 
+        else:
+            self.wait()
         # For Testing as it's own node 
         #self.rotate()
 
@@ -243,8 +257,6 @@ t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time()
     movement.loop(t,t0)
-
-
 
 
 
