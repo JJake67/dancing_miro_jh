@@ -1,19 +1,19 @@
 <launch> 
     <arg name="dancing_mode" default="auto" />
-    <node pkg = "diss" type = "point_to_sound_srv.py" name = "point_to_sound" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "point_to_sound_srv.py" name = "point_to_sound" output = "screen" >
     </node>
-    <node pkg = "diss" type = "identify_song.py" name = "identify_song" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "identify_song.py" name = "identify_song" output = "screen" >
     </node>
-    <node pkg = "diss" type = "listen_and_record.py" name = "listen_and_record" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "listen_and_record.py" name = "listen_and_record" output = "screen" >
     </node>
-    <node pkg = "diss" type = "tempo.py" name = "tempo_est" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "tempo.py" name = "tempo_est" output = "screen" >
     </node>
-    <node pkg = "diss" type = "pub.py" name = "head_neck" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "pub.py" name = "head_neck" output = "screen" >
     </node>
-    <node pkg = "diss" type = "illum_pub.py" name = "LEDs" output = "screen">
+    <node pkg = "dancing_miro_jh" type = "illum_pub.py" name = "LEDs" output = "screen">
     </node>
-    <node pkg = "diss" type = "body_moves.py" name = "body" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "body_moves.py" name = "body" output = "screen" >
     </node>
-    <node pkg = "diss" type = "miro_dance.py" name = "miro_dance" args="$(arg dancing_mode)" output = "screen" >
+    <node pkg = "dancing_miro_jh" type = "miro_dance.py" name = "miro_dance" args="$(arg dancing_mode)" output = "screen" >
     </node>
 </launch>

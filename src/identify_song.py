@@ -22,7 +22,7 @@ class identifySongService():
   def srv_callback(self, request_from_client):
     #directory = os.getcwd()
     rospack = rospkg.RosPack()
-    path = rospack.get_path('diss')
+    path = rospack.get_path('dancing_miro_jh')
     print(path)
     print("plz")
     response_from_server = SetBoolResponse()

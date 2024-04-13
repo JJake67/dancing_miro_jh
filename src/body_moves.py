@@ -9,7 +9,7 @@ from std_msgs.msg import (
 )  # Used in flag publisher
 
 from geometry_msgs.msg import TwistStamped  # ROS cmd_vel (velocity control)
-from diss.msg import body
+from dancing_miro_jh.msg import body
 import miro2 as miro
 
 # May be useful for better wheel moves

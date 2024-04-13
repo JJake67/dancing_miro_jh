@@ -27,7 +27,7 @@ class estTempoAndBeats():
         if request_from_client.data == True:
 
             rospack = rospkg.RosPack()
-            path = rospack.get_path('diss')
+            path = rospack.get_path('dancing_miro_jh')
 
             y, sr = librosa.load(path + '/data/miro_audio.wav')
             hop_length = 512 

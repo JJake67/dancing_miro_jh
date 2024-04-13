@@ -17,7 +17,7 @@ import sys
 import wave, struct
 import pydub
 from RobotInterface import RobotInterface
-from diss.msg import lights
+from dancing_miro_jh.msg import lights
 # Recording Setup 
 
 BUFFER_STUFF_SAMPLES = 4000
@@ -82,7 +82,7 @@ class listen_and_record():
         self.playsamp = 0
 
         rospack = rospkg.RosPack()
-        path = rospack.get_path('diss')
+        path = rospack.get_path('dancing_miro_jh')
         self.directory = path
         #subscribers
         topic = topic_base_name + "/sensors/stream"

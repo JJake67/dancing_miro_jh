@@ -8,7 +8,7 @@ import numpy as np
 from requests import post, get
 from std_msgs.msg import String, UInt32, UInt16MultiArray
 from std_srvs.srv import SetBool, SetBoolRequest
-from diss.msg import body, lights, head
+from dancing_miro_jh.msg import body, lights, head
 import miro2 as miro
 # from msg_place import SetString, SetStringResponse
 class MiroDance(object):
@@ -432,7 +432,7 @@ class MiroDance(object):
                 while current_time < 50:
                     self.publish_lights_cmd(False)
                     self.publish_body_cmds(False)
-                    #self.publish_head_cmd(False) 
+                    self.publish_head_cmd(False) 
                     current_time = rospy.get_time() - self.music_start_time
                     rospy.sleep(0.02)
 
