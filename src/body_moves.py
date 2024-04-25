@@ -256,7 +256,7 @@ movement = BodyMoves()
 t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time()
-    movement.loop(t,t0)
+    #movement.loop(t,t0)
 
 
 

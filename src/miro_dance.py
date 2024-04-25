@@ -352,7 +352,7 @@ class MiroDance(object):
             avg_song_len  = 120/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
             #print("here??")
-
+        print(f"tempo est:{self.tempo}")
         #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         
         # Calls service that uses shazam to identify the song name
@@ -396,7 +396,7 @@ class MiroDance(object):
             self.headPub.publish(head_message)
 
             # Localises, listens, records, and processes data
-            #self.pre_dance_processes()
+            self.pre_dance_processes()
 
             # Sounds tone to indicate dancing is about to start
             self.tone.data[0] = 1   # Frequency

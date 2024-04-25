@@ -83,6 +83,7 @@ class JointPublisher(object):
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
         return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
+        # NEED TO GET RID OF (freq/2*math.pi)
 
     # Would be the same as using new_sine_generator with a phase of pi/2
     def cosine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
@@ -421,8 +422,10 @@ t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time() 
     #movement.head_bop(t,t0)
-    movement.loop(t,t0)
-
+    #movement.loop(t,t0)
+    #out = movement.new_sine_generator(1.04,0.14,0.5,0,t,t0)
+    #print(out)
+    rospy.sleep(0.02)
 
 
 
