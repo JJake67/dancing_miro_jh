@@ -23,14 +23,15 @@ class identifySongService():
     #directory = os.getcwd()
     rospack = rospkg.RosPack()
     path = rospack.get_path('dancing_miro_jh')
-    print(path)
-    print("plz")
+    #print(path)
+    #print("plz")
     response_from_server = SetBoolResponse()
-    print("plug phone")
+    print("")
+    print("Connect to your hotspot now, you have TEN seconds!")
     #self.listenForSongPub.publish(True)
     rospy.sleep(10)
     if request_from_client.data == True:
-      print("Server received True, will attempt song identification")
+      #print("Server received True, will attempt song identification")
       async def findSong():
         shazam = Shazam()
         # Waits until shazam identifies song
@@ -38,7 +39,7 @@ class identifySongService():
         #print(out)
         if len(out["matches"]) == 0 :
           self.song_title = ""
-          print("womp womp")
+          print("No Matches Found")
         else:
           self.song_title = out["track"]["title"]
       #print("ye")

@@ -82,7 +82,7 @@ class JointPublisher(object):
         return ((mx-mn) * np.sin (freq*(t-t0) + phase) / 2.0 + offset)
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
-        return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
+        return ((mx-mn)) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
         # NEED TO GET RID OF (freq/2*math.pi)
 
     # Would be the same as using new_sine_generator with a phase of pi/2
@@ -161,7 +161,7 @@ class JointPublisher(object):
             act_lift = 0.65
         else:
             act_lift = 0.9
-        print(lift)
+        #print(lift)
         
         self.kinematic_joint_cmd.position = [0,act_lift,act_yaw,0]
         self.kinematic_pub.publish(self.kinematic_joint_cmd)
@@ -207,7 +207,7 @@ class JointPublisher(object):
         self.kinematic_joint_cmd = JointState()
         self.cosmetic_joint_cmd = Float32MultiArray()
 
-        blink_f= (1 / self.tempo)/2
+        blink_f= (1 / self.tempo)/4
         #blink= self.sine_generator(0,0.8,1,blink_f,t,t0)
         #tempo * 2 coz otherwise even the blinks will be in sync with the head banging
         # maybe that'll look good though idk
@@ -215,10 +215,10 @@ class JointPublisher(object):
         self.cosmetic_joint_cmd.data= [0,0,blink,blink,0,0]
         #print(blink)
 
-        pitch_freq = (1 / self.tempo)/2
+        pitch_freq = (1 / self.tempo)/4
         #pitch = self.sine_generator(8, -22, 0, pitch_freq, 0, t, t0)
         pitch = self.new_sine_generator(0.14,-0.38,pitch_freq,0,t,t0)
-        lift_freq = (1 / self.tempo)/2
+        lift_freq = (1 / self.tempo)/4
         #lift = self.sine_generator(8, -22, 0, lift_freq, 0, t, t0)
         lift = self.new_sine_generator(1.04,0.14,lift_freq,0,t,t0)
         #print(pitch)
@@ -232,7 +232,7 @@ class JointPublisher(object):
         joint_min = 14
         joint_max = 104
         joint_range = abs(joint_max)+abs(joint_min)
-        print(joint_range)
+        #print(joint_range)
         new_joint_min = 0 
         new_joint_max = 0 
         if self.tempo <= 0.45:
@@ -262,7 +262,7 @@ class JointPublisher(object):
         self.lift_phase = round(random.uniform(0,math.pi))
 
         if (random.randint(1,5) == 1):
-            print("neck turning off")
+            #print("neck turning off")
             self.lift_min = self.neck_lift
             #self.lift_min = round(random.uniform(0.14,1.04),2)
             self.lift_max = self.lift_min
@@ -302,7 +302,7 @@ class JointPublisher(object):
         self.pitch_phase = round(random.uniform(0,math.pi/2))
 
         if (random.randint(1,3) == 1):
-            print("head tilt turning off")
+            #print("head tilt turning off")
             self.pitch_min = round(random.uniform(-0.38,0.14),2)
             self.pitch_max = self.pitch_min
     
@@ -398,17 +398,17 @@ class JointPublisher(object):
 
                 if self.joint_chooser == 0:
                     self.change_yaw_values()
-                    print("new yaws")
-                    print(self.yaw_max)
-                    print(self.yaw_min)
+                    #print("new yaws")
+                    #print(self.yaw_max)
+                    #print(self.yaw_min)
                     self.joint_chooser =+1
 
                 elif self.joint_chooser == 1:
                     self.change_lift_values()
                     self.joint_chooser = 0
-                    print("new lifts")
-                    print(self.lift_max)
-                    print(self.lift_min)
+                    #print("new lifts")
+                    #print(self.lift_max)
+                    #print(self.lift_min)
 
 
             self.publish_cosmetics()

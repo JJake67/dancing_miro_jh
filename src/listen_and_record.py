@@ -185,7 +185,7 @@ class listen_and_record():
                     # end recording
                     self.outbuf = self.micbuf
                     self.micbuf = None
-                    print (" OK!")
+                    #print (" OK!")
 
     def record_audio(self):
         # Take client audio.py
@@ -205,17 +205,17 @@ class listen_and_record():
         file.setsampwidth(2)
         file.setframerate(MIC_SAMPLE_RATE)
 
-        print ("writing two channels to file (LEFT and RIGHT)...")
+        #print ("writing two channels to file (LEFT and RIGHT)...")
         file.setnchannels(2)
         x = np.reshape(self.outbuf[:, [0, 1]], (-1))
-        print(len(x))
+        #print(len(x))
         for s in x:
             file.writeframes(struct.pack('<h', s))
-        print(file.tell())
+        #print(file.tell())
         file.close()
 
         #Converts to mp3
-        print ("wrote output file at", outfilename)
+        #print ("wrote output file at", outfilename)
         sound = pydub.AudioSegment.from_wav(outfilename)
         ogg_output = self.directory + '/data/miro_audio.ogg'
         sound.export(ogg_output,format="ogg")
@@ -223,7 +223,7 @@ class listen_and_record():
     def srv_callback(self,request_from_client):
         # HOW TO GET PATH WHEN os.getcwd DOESNT WORK
         response_from_server = SetBoolResponse()
-        print("yes")
+        #print("yes")
         # This switch loops through MiRo behaviours:
         self.status_code = 0
         while request_from_client.data == True:
@@ -235,8 +235,10 @@ class listen_and_record():
             # Step 2. Orient towards it
             elif self.status_code == 2:
                 ## Print that a sound has been detected
-                print("Loud Signal Detected")
-                print("Recording...")
+                print("")
+                print("MiRo hears a loud signal ")
+                print("")
+                print("MiRo is Recording")
 
     
                 message = lights()
@@ -248,7 +250,7 @@ class listen_and_record():
                 #print(self.music_start_time)
                 self.record_audio()
                 #rospy.sleep(5)
-                print("here?")
+                #print("here?")
                 #clear the data collected when miro is turning
                 self.audio_event=[]
                 self.status_code = 0

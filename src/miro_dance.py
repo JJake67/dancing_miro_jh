@@ -133,7 +133,7 @@ class MiroDance(object):
 
         # If no results were found searching song name, can't continue
         if len(json_result) == 0:
-            print("noor sorryyy")
+            print("No Track Returned with that name")
             return None
         
         # Song ID
@@ -274,24 +274,24 @@ class MiroDance(object):
         # Base on genres: pop, rock, blues, metal, 
         # For Head Dance Move
         if self.genre == "pop":
-            print("pop picked")
+            print("Genre : POP")
             dances_for_genre = [0,1,2,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "soul":
-            print("soul picked")
+            print("Genre : SOUL")
             dances_for_genre = [0,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "electronic":
-            print("metal picked")
+            print("Genre : Electronic")
             dances_for_genre = [1]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
         else:
-            print("random picked")
+            print("No Specific Genre")
             #Any move
             index = random.randint(0,3)
             self.head_dance_move = self.head_move_names[index]
@@ -316,23 +316,29 @@ class MiroDance(object):
         self.pub_flags.publish(msg)
 
         # Identify Song
-        print("Play Music Now")
+        print("-------------------------------")
+        print("Program Ready, start music NOW!")
+        print("-------------------------------")
+
         message = lights()
         message.move_name = "localising"
         self.lightsPub.publish(message)
+        print("")
+        print("MiRo is trying to localise and face the music")
         # SEND LIGHT COMMAND THAT SHOWS HE IS LOCALISING
         # Calls service that gets MiRo to face the source of the sound 
         response_point_to_sound = self.service_localise_MiRo(self.request_to_localise)
         self.music_start_time = float(response_point_to_sound.message)
         message = lights()
         message.move_name = "listening"
+        print("")
+        print("MiRo is listening to the music to dance to")
         self.lightsPub.publish(message)
         # Calls service that records the MiRo's microphones when music is playing and
         # saves it to data/miro_audio.mp3
         response_listen_and_record = self.service_record(self.request_to_record)
         if self.music_start_time == 0.0:
             self.music_start_time = float(response_listen_and_record.message)
-
         message.move_name = "processing"
         self.lightsPub.publish(message)
         # Calls service that estimates tempo (needed for auto mode) and the time 
@@ -354,7 +360,6 @@ class MiroDance(object):
             #print("here??")
 
         #self.last_beat = round(float(tempo_and_last_beat[1]),2)
-        
         # Calls service that uses shazam to identify the song name
         # and then calls methods that access Spotify API to retrieve
         # audio analysis (tempo, beats, sections etc)
@@ -362,16 +367,22 @@ class MiroDance(object):
 
             # Loops until shazam finds the song, may require multiple recordings for shazam to find it 
             while self.song_name == "":
-                print("Plug in phone now, you have 10 seconds")
+                print("")
+                print("MiRO is identifying the song")
+
                 response_song_identification = self.service_identify(self.request_to_identify) 
                 print(response_song_identification.message)
                 if response_song_identification.message != "":
                     self.song_name = response_song_identification.message
-                    print("song found")
+                    print("----------")
+                    print("SONG FOUND")
+                    print("----------")
+                    print("")
+                    rospy.sleep(2)
                 else:
                     message.move_name = "listening"
                     self.lightsPub.publish(message)
-                    print("unplug phone, and cont playing music, you have 5 seconds")
+                    print("Sound could not be found, disconnect from hotspot, MiRo will record the song again")
                     rospy.sleep(5)
                     response_listen_and_record = self.service_record(self.request_to_record)
                     message.move_name = "processing"
@@ -379,6 +390,7 @@ class MiroDance(object):
 
             # Calls Spotify only once the song name has definitely been found
             self.set_track_data()
+            print("Disconnect from hotspot now!")
             self.beat_len = 60 / self.tempo
         
         # PUBLISH STOP LIGHTS COMMAND
@@ -419,14 +431,14 @@ class MiroDance(object):
             dance_start_time = float(rospy.get_time())
             how_far_into_song = dance_start_time - self.music_start_time
             length_to_wait = self.length_to_wait(how_far_into_song)
-            print(f"the dance moves started {how_far_into_song} seconds after the song started")
-            print(self.tempo) 
+            #print(f"the dance moves started {how_far_into_song} seconds after the song started")
+            #print(self.tempo) 
             # Ensures dancing starts on beat
             rospy.sleep(length_to_wait)
             if self.dance_mode == "Auto":
                 self.genre = "none"
                 current_time = rospy.get_time() - self.music_start_time
-
+                print("Autonomous Dancing Starting Now")
                 # Assumes the song is 2 minutes long so the dancing will stop 
                 while current_time < 50:
                     self.publish_lights_cmd(False)
@@ -441,6 +453,10 @@ class MiroDance(object):
                 self.genre = "none"
                 for x in range(0,len(self.sections)):
                     current_time = rospy.get_time()-self.music_start_time
+                    if autoMode == False:
+                        print(f"Pre-programmed Section Starting with the move : {self.head_dance_move}")
+                    else:
+                        print(f"Autonomous Section Starting")
                     while current_time < self.sections[x]: 
                         self.publish_body_cmds(autoMode)
                         self.publish_head_cmd(autoMode)
@@ -449,22 +465,24 @@ class MiroDance(object):
                         rospy.sleep(0.02)
                     # Alternates between the autonomous dancing and the pre-programmed moves
                     # Changes the dance moves if they will be used next iteration 
-                    print(self.sections[x])
+                    #print(self.sections[x])
                     # Swaps moves when automode is on, as the next iteration
                     # will be the preprogrammed moves
                     if autoMode == True:
                         #print("swapping moves")
                         self.change_moves_around()
-                        print(f"Next Move:{self.head_dance_move}")
+                        #print(f"Next Move:{self.head_dance_move}")
                     autoMode = not autoMode
             # Song ended
             self.stop_all_joints_cmd()
-            print("The current song has ended")
             print("--------------------------")
+            print("The current song has ended")
             print("Restarting for next song...")
-            rospy.sleep(10)
+            print("--------------------------")
+            rospy.sleep(5)
             # Reset any values that need to be reset before doing another song
             self.music_start_time = 0 
+            self.song_name == ""
 
         
 if __name__ == "__main__":

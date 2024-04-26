@@ -189,13 +189,13 @@ class PointToSoundService():
             # the frame is different: not from the same event
             self.frame_p = ae_head.x
             self.turn_to_sound()
-            print("MiRo is moving......")
+            #print("MiRo is moving......")
             self.status_code = 0 
 
     def turn_to_sound(self): 
         if self.audio_event[0] is None:
             return
-        print("angular in degrees:{:.2f}".format(self.audio_event[0].ang))
+        #print("angular in degrees:{:.2f}".format(self.audio_event[0].ang))
         
         # Stops him moving when he's within 20 degrees of accuracy to the sound
         if not (self.audio_event[0].ang > -10 and self.audio_event[0].ang < 10):

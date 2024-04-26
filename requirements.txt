@@ -87,7 +87,6 @@ interactive-markers==1.12.0
 joblib==1.1.0
 joint-state-publisher==1.15.1
 joint-state-publisher-gui==1.15.1
-kazam==1.4.5
 keyring==18.0.1
 kiwisolver==1.0.1
 language-selector==0.1
@@ -242,7 +241,6 @@ Twisted==18.9.0
 txaio==2.10.0
 typing-extensions==4.2.0
 u-msgpack-python==2.1
-ubuntu-advantage-tools==27.7
 ubuntu-drivers-common==0.0.0
 ufw==0.36
 unattended-upgrades==0.1

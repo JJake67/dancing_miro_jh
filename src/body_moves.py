@@ -56,7 +56,7 @@ class BodyMoves(object):
         self.command = topic_message.move_name
 
     def new_sine_generator(self,mx=1, mn=0, freq=1, phase=0 ,t=1.0 ,t0=0):
-        return ((mx-mn)) * (freq/2* math.pi) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
+        return ((mx-mn)) * (np.sin(freq*(t-t0)*2*math.pi+phase) / 2) + (mx - ((mx-mn)/2)) 
 
     # Move Set -------------------------------------------------
     def rotate(self):
