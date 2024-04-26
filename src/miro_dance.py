@@ -352,7 +352,7 @@ class MiroDance(object):
             avg_song_len  = 120/self.beat_len 
             self.sections = [self.beat_len*16,self.beat_len*32,self.beat_len*48,self.beat_len*64,avg_song_len]
             #print("here??")
-        print(f"tempo est:{self.tempo}")
+
         #self.last_beat = round(float(tempo_and_last_beat[1]),2)
         
         # Calls service that uses shazam to identify the song name
@@ -411,19 +411,18 @@ class MiroDance(object):
             #rospy.sleep(5)
             #self.set_track_data()
             # THIS GETS SET IN PRE-PROCESSING (WORKS FOR AUTO AND SPOTIFY)
-            self.music_start_time = rospy.get_time()
-            self.sections = [10,20,30,40,50,60,70,80]
-            self.tempo = 120
+            #self.sections = [10,20,30,40,50,60,70,80]
+            #self.tempo = 120
             #self.beat_len = 60 / self.tempo
             # End of test stuff ---------------------------------
 
             dance_start_time = float(rospy.get_time())
             how_far_into_song = dance_start_time - self.music_start_time
-            #length_to_wait = self.length_to_wait(how_far_into_song)
+            length_to_wait = self.length_to_wait(how_far_into_song)
             print(f"the dance moves started {how_far_into_song} seconds after the song started")
-
+            print(self.tempo) 
             # Ensures dancing starts on beat
-            #rospy.sleep(length_to_wait)
+            rospy.sleep(length_to_wait)
             if self.dance_mode == "Auto":
                 self.genre = "none"
                 current_time = rospy.get_time() - self.music_start_time
@@ -458,7 +457,6 @@ class MiroDance(object):
                         self.change_moves_around()
                         print(f"Next Move:{self.head_dance_move}")
                     autoMode = not autoMode
-                
             # Song ended
             self.stop_all_joints_cmd()
             print("The current song has ended")

@@ -422,7 +422,7 @@ t0 = rospy.get_time()
 while not rospy.is_shutdown():
     t = rospy.get_time() 
     #movement.head_bop(t,t0)
-    #movement.loop(t,t0)
+    movement.loop(t,t0)
     #out = movement.new_sine_generator(1.04,0.14,0.5,0,t,t0)
     #print(out)
     rospy.sleep(0.02)

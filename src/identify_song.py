@@ -35,17 +35,17 @@ class identifySongService():
         shazam = Shazam()
         # Waits until shazam identifies song
         out = await shazam.recognize(path+"/data/miro_audio.ogg")
-        print(out)
+        #print(out)
         if len(out["matches"]) == 0 :
           self.song_title = ""
           print("womp womp")
         else:
           self.song_title = out["track"]["title"]
-      print("ye")
+      #print("ye")
       loop = asyncio.new_event_loop()
-      print("yeee")
+      #print("yeee")
       loop.run_until_complete(findSong())
-      print("yeeeeee")
+      #print("yeeeeee")
       response_from_server.success = True
       response_from_server.message = self.song_title
     else:
