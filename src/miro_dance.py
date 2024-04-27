@@ -234,6 +234,7 @@ class MiroDance(object):
     # E.g Sam Cooke = ['Classic Soul','Soul','Vocal Jazz'] -->"Soul"
     def decide_genre(self, list_of_genres):
         genre = ""
+        print(list_of_genres)
         for genre_name in list_of_genres:
             if "soul" in genre_name:
                 genre = "soul"
@@ -243,14 +244,15 @@ class MiroDance(object):
                 genre = "rock"
             if "metal" in genre_name:
                 genre = "metal"
-            if "blues" in genre_name:
-                genre = "blue"
+            if "hip-hop" in genre_name:
+                genre = "hip-hop"
             if "classical" in genre_name:
                 genre = "classical"
             if "electr" in genre_name:
                 genre = "electronic"
             # If a genre has been found, doesn't need to iterate through the other genres
             if genre != "":
+                print(genre)
                 break
         return genre
 
@@ -274,20 +276,32 @@ class MiroDance(object):
         # Base on genres: pop, rock, blues, metal, 
         # For Head Dance Move
         if self.genre == "pop":
-            print("Genre : POP")
-            dances_for_genre = [0,1,2,3]
+            #print("Genre : Pop")
+            dances_for_genre = [0,2]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "soul":
-            print("Genre : SOUL")
+            #print("Genre : Soul")
             dances_for_genre = [0,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
 
         if self.genre == "electronic":
-            print("Genre : Electronic")
-            dances_for_genre = [1]
+            #print("Genre : Electronic")
+            dances_for_genre = [1,2]
+            index = random.randint(0,len(dances_for_genre)-1)
+            self.head_dance_move = self.head_move_names[index]
+
+        if self.genre == "rock":
+            #print("Genre : Rock")
+            dances_for_genre = [1,2]
+            index = random.randint(0,len(dances_for_genre)-1)
+            self.head_dance_move = self.head_move_names[index]
+
+        if self.genre == "hip-hop":
+            #print("Genre : Hip-Hop")
+            dances_for_genre = [2,3]
             index = random.randint(0,len(dances_for_genre)-1)
             self.head_dance_move = self.head_move_names[index]
         else:
@@ -369,7 +383,6 @@ class MiroDance(object):
             while self.song_name == "":
                 print("")
                 print("MiRO is identifying the song")
-
                 response_song_identification = self.service_identify(self.request_to_identify) 
                 print(response_song_identification.message)
                 if response_song_identification.message != "":
@@ -484,7 +497,6 @@ class MiroDance(object):
             self.music_start_time = 0 
             self.song_name == ""
 
-        
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
     args = rospy.myargv()

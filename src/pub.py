@@ -101,12 +101,12 @@ class JointPublisher(object):
 
     # Sets his eyes openness based on bpm 
     def set_eyes(self,tempo):
-        if tempo < 0.40:
-            self.eye = 0.2
-        elif tempo > 0.7:
+        if tempo < 0.45:
+            self.eye = 0.15
+        elif tempo > 0.75:
             self.eye = 0.5
         else:
-            self.eye = tempo - 0.2
+            self.eye = tempo - 0.3
     
     # General kinematic joints ---------------------------------------------
     # YAW MAX = 0.95, MIN = -0.95 (RAD) MAX = 55, MIN = -55 (DEG) 
@@ -427,6 +427,9 @@ while not rospy.is_shutdown():
     #print(out)
     rospy.sleep(0.02)
 
+# THESE TWO GAVE ME ISSUES, TAKEN OUT OF REQUIREMENTS.TXT
+#kazam==1.4.5
+#ubuntu-advantage-tools==27.7
 
 
 

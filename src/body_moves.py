@@ -173,7 +173,7 @@ class BodyMoves(object):
     
     # Should just move back and forth with the head 
     def head_bounce_move(self,t,t0):
-        lin_vel = 0.01
+        lin_vel = 0.002
         ang_vel = self.new_sine_generator(0.5,-0.5,self.tempo/2,0,t,t0)
         self.velocity.twist.angular.z = ang_vel
         self.velocity.twist.linear.x = lin_vel
