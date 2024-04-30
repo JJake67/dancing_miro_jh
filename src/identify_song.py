@@ -29,7 +29,7 @@ class identifySongService():
     print("")
     print("Connect to your hotspot now, you have TEN seconds!")
     #self.listenForSongPub.publish(True)
-    rospy.sleep(10)
+    #rospy.sleep(10)
     if request_from_client.data == True:
       #print("Server received True, will attempt song identification")
       async def findSong():

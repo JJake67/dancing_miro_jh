@@ -53,7 +53,7 @@ class listen_and_record():
         self.start_listening = False
         #Subscriber Node
         self.sub_mics = rospy.Subscriber(topic_base_name + "/sensors/mics",
-            Int16MultiArray, self.callback_identify_mics, queue_size=1, tcp_nodelay=True)
+            Int16MultiArray, self.callback_identify_mics, queue_size=5, tcp_nodelay=True)
         
         # status flags
         self.audio_event = None

@@ -227,7 +227,30 @@ class BodyMoves(object):
         msg.data = miro.constants.PLATFORM_D_FLAG_DISABLE_CLIFF_REFLEX
         self.pub_flags.publish(msg)
         lin_vel = 0.002
-        ang_vel = self.new_sine_generator(0.6,-0.6,self.tempo/2,0,t,t0)
+
+
+        if self.sequence_step == 0: 
+            lin_vel = 0.03
+            ang_vel = self.new_sine_generator(2,-2,self.tempo/2,0,t,t0)
+        # 2 - stay still for a bit 
+        if self.sequence_step == 1:
+            lin_vel = 0 
+            ang_vel = 0
+        if self.sequence_step == 2:
+            lin_vel = -0.03
+            ang_vel = self.new_sine_generator(2,-2,self.tempo/2,0,t,t0)
+
+        # 4 - stay still for a bit
+        if self.sequence_step == 3:
+            lin_vel = 0
+            ang_vel = 0
+        if self.t_next_step < t:
+            if self.sequence_step == 3:
+                self.sequence_step = 0 
+            else: 
+                self.sequence_step = self.sequence_step + 1
+            self.t_next_step = t + (2* self.tempo)
+
         self.velocity.twist.angular.z = ang_vel
         self.velocity.twist.linear.x = lin_vel
         self.pub_cmd_vel.publish(self.velocity)
@@ -236,8 +259,10 @@ class BodyMoves(object):
     # Main Loop                                                                       
     def loop(self,t,t0):
         #Preprogrammed Moves
-        if self.command == "done" or self.command == "general":
+        if self.command == "done":
             self.wait()
+        elif self.command == "general":
+            self.general_moves(t,t0)
         elif self.command == "head_bounce":
             self.head_bounce_move(t,t0)
         elif self.command == "head_bang":

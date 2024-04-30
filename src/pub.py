@@ -258,10 +258,10 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.lift_min = float(joint_min/100)
             self.lift_max = float(joint_max/100)
-            self.lift_modifier = 0.5
+            self.lift_modifier = 0.25
         self.lift_phase = round(random.uniform(0,math.pi))
 
-        if (random.randint(1,5) == 1):
+        if (random.randint(1,4) == 1):
             #print("neck turning off")
             self.lift_min = self.neck_lift
             #self.lift_min = round(random.uniform(0.14,1.04),2)
@@ -298,10 +298,10 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.pitch_min = float(joint_max/100)
             self.pitch_max = float(joint_max/100)
-            self.pitch_modifier = 0.5
+            self.pitch_modifier = 0.25
         self.pitch_phase = round(random.uniform(0,math.pi/2))
 
-        if (random.randint(1,3) == 1):
+        if (random.randint(1,4) == 1):
             #print("head tilt turning off")
             self.pitch_min = round(random.uniform(-0.38,0.14),2)
             self.pitch_max = self.pitch_min
@@ -337,9 +337,9 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.yaw_min = float(joint_min/100)
             self.yaw_max = float(joint_max/100)
-            self.yaw_modifier = 0.5
+            self.yaw_modifier = 0.25
         self.yaw_phase = round(random.uniform(0,math.pi))
-        if (random.randint(1,3) == 1):
+        if (random.randint(1,4) == 1):
             #print("head side to side turning off")
             self.yaw_min = round(random.uniform(-0.95,0.95),2)
             self.yaw_min = self.head_yaw
