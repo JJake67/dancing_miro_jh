@@ -258,7 +258,7 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.lift_min = float(joint_min/100)
             self.lift_max = float(joint_max/100)
-            self.lift_modifier = 0.25
+            self.lift_modifier = 0.5
         self.lift_phase = round(random.uniform(0,math.pi))
 
         if (random.randint(1,4) == 1):
@@ -298,7 +298,7 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.pitch_min = float(joint_max/100)
             self.pitch_max = float(joint_max/100)
-            self.pitch_modifier = 0.25
+            self.pitch_modifier = 0.5
         self.pitch_phase = round(random.uniform(0,math.pi/2))
 
         if (random.randint(1,4) == 1):
@@ -337,7 +337,7 @@ class JointPublisher(object):
             # DONT EVEN KNOW IF I NEED THESE LINES
             self.yaw_min = float(joint_min/100)
             self.yaw_max = float(joint_max/100)
-            self.yaw_modifier = 0.25
+            self.yaw_modifier = 0.5
         self.yaw_phase = round(random.uniform(0,math.pi))
         if (random.randint(1,4) == 1):
             #print("head side to side turning off")
