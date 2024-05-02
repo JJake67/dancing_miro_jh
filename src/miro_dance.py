@@ -323,7 +323,7 @@ class MiroDance(object):
             print("No Specific Genre")
             #Any move
             index = random.randint(0,3)
-            self.head_dance_move = self.head_move_names[i]
+            self.head_dance_move = self.head_move_names[index]
 
     # Calculates how long to wait before publishing in order for commands to be in sync with the song beat
     def length_to_wait(self, length_into_song):
@@ -469,10 +469,10 @@ class MiroDance(object):
                 current_time = rospy.get_time() - self.music_start_time
                 print("Autonomous Dancing Starting Now")
                 # Assumes the song is 2 minutes long so the dancing will stop 
-                while current_time < 100:
-                    self.publish_lights_cmd(False)
-                    self.publish_body_cmds(False)
-                    self.publish_head_cmd(False) 
+                while current_time < 30:
+                    self.publish_lights_cmd(True)
+                    self.publish_body_cmds(True)
+                    self.publish_head_cmd(True) 
                     current_time = rospy.get_time() - self.music_start_time
                     rospy.sleep(0.02)
             print(self.sections)
@@ -507,10 +507,10 @@ class MiroDance(object):
             print("The current song has ended")
             print("Restarting for next song...")
             print("--------------------------")
-            rospy.sleep(5)
             # Reset any values that need to be reset before doing another song
             self.music_start_time = 0 
             self.song_name = ""
+            rospy.sleep(5)
 
 if __name__ == "__main__":
     rospy.init_node("dance_MiRo",anonymous=True)
