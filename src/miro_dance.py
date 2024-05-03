@@ -469,7 +469,7 @@ class MiroDance(object):
                 current_time = rospy.get_time() - self.music_start_time
                 print("Autonomous Dancing Starting Now")
                 # Assumes the song is 2 minutes long so the dancing will stop 
-                while current_time < 90:
+                while current_time < 150:
                     self.publish_lights_cmd(True)
                     self.publish_body_cmds(True)
                     self.publish_head_cmd(True) 
