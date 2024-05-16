@@ -58,7 +58,12 @@ class JointPublisher(object):
         # Subscriber
         topic_name = "head_topic"
         self.sub = rospy.Subscriber(topic_name, head, self.cmd_callback)
-    
+
+        self.sub = rospy.Subscriber(self.topic_base_name + "/sensors/kinematic_joints",JointState, self.kinematic_callback)
+        self.curJoint = 0
+        self.curPitch = 0
+        self.curYaw = 0
+        self.curLift = 0
         # Defining joint commands
         self.kinematic_joint_cmd = JointState()
         self.kinematic_joint_cmd.position = [0, 0, 0, 0]
@@ -76,6 +81,12 @@ class JointPublisher(object):
             self.tempo = 60 / topic_message.tempo
         else:
             self.tempo = 0
+    
+    def kinematic_callback(self, message):
+        #print(message.position[1])
+        self.curLift = message.position[1]
+        self.curYaw = message.position[2]
+        self.curPitch = message.position[3]
     
     # V1: Used by the pre-programmed moves but is wrong :)
     def sine_generator(self, mx=1, mn=0, offset=0, freq=1, phase=0, t=1.0, t0=0):
@@ -414,18 +425,66 @@ class JointPublisher(object):
             self.publish_cosmetics()
             self.publish_kinematics()
 
+    def test_print(self,t,t0):
+        yaw = self.new_sine_generator(0.95,-0.95,0.5,0,t,t0)
+        #yaw = 0 
+        lift = 0 
+        pitch = 0
+        #lift = self.new_sine_generator(1.04,0.14,0.5,0,t,t0)
+        #pitch = self.new_sine_generator(0.14,-0.38,0.5,0,t,t0)
+        self.kinematic_joint_cmd.position = [0,lift,yaw, pitch]
+        self.kinematic_pub.publish(self.kinematic_joint_cmd)
+        rospy.sleep(0.02)
+        rec_lift = self.curLift
+        rec_yaw = self.curYaw
+        rec_pitch = self.curPitch
+        return pitch, rec_yaw
+
 movement = JointPublisher()
 t0 = rospy.get_time()
 
 #movement.tempo = 60 / 60 
 #movement.tempo = 0.5
-while not rospy.is_shutdown():
-    t = rospy.get_time() 
+#while not rospy.is_shutdown():
+#    t = rospy.get_time() 
     #movement.head_bop(t,t0)
-    movement.loop(t,t0)
+#    movement.loop(t,t0)
     #out = movement.new_sine_generator(1.04,0.14,0.5,0,t,t0)
     #print(out)
-    rospy.sleep(0.02)
+    #rospy.sleep(0.02)
+t0 = rospy.get_time()
+t = rospy.get_time()
+joint = []
+real_yaw = []
+real_pitch = []
+real_lift = []
+real_time = []
+while t < t0 + 5:
+    t = rospy.get_time()
+
+    sentcmd, recYaw = np.round(movement.test_print(t,t0),3)
+    joint.append(sentcmd)
+    real_yaw.append(recYaw)
+    #real_pitch.append(recPitch)
+    #real_lift.append(recLift)
+    cur_time = t - t0 
+    cur_time = np.round(cur_time,2)
+    real_time.append(cur_time)
+    #rospy.sleep(0.02)
+
+
+
+np.savetxt("sentArray_yaw.txt", joint)
+np.savetxt("realTime_yaw.txt", real_time)
+np.savetxt("receivedArray_yaw.txt", real_yaw)
+
+
+#np.savetxt("all_yaw.txt", real_yaw)
+#np.savetxt("all_pitch.txt",real_pitch)
+#np.savetxt("all_lift", real_lift)
+#np.savetxt("all_time.txt",real_time)
+
+
 
 # THESE TWO GAVE ME ISSUES, TAKEN OUT OF REQUIREMENTS.TXT
 #kazam==1.4.5
