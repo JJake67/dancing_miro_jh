@@ -59,7 +59,3 @@ class estTempoAndBeats():
 if __name__ == '__main__':
     server = estTempoAndBeats()
     server.main()
-
-# OLD PATHING 
-#full_path = os.path.realpath(__file__)
-#path, filename = os.path.split(full_path)
