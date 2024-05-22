@@ -4,13 +4,8 @@
 
 Go to the **dancing_miro directory**<br>
 
-run `roslaunch dancing_miro moves.launch` <br>
-#### Open another terminal <br>
+install the required libraries using the command "pip install -r requirements.txt", ignoring any failing installs
 
-Go to `/mdk/bin/shared` <br>
+run `roslaunch dancing_miro_jh full_program.launch dancing_mode:= {MODE_NAME}` <br>
+MODE_NAME can either be "Spotify" or "Auto", if an invalid name is entered, Auto Mode will run automatically.
 
-Run `python3 client_stream.py` <br>
-
-Then choose the number that identifies the **lazy farmer song** <br> 
-
-Run `python3 client_stream.py x`
